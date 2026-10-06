@@ -34,5 +34,7 @@ COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 4000
 
-# Railway injects the real DATABASE_URL at runtime.
-CMD ["sh","-c","npm run db:migrate:deploy --workspace=backend && npm run start --workspace=backend"]
+# Railway injects the real DATABASE_URL and ADMIN_API_TOKEN at runtime.
+# Migrations are applied first; the idempotent seed then upserts the
+# canonical CMS sections without replacing existing JSON content.
+CMD ["sh","-c","npm run db:migrate:deploy --workspace=backend && npm run db:seed --workspace=backend && npm run start --workspace=backend"]

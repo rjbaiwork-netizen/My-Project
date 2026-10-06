@@ -54,12 +54,76 @@ jobs:
           echo "==> Push to main triggers the Render deployment automatically."
           echo "✓ Render deployment handoff complete."
 
+      - name: Production smoke tests
+        shell: bash
+        env:
+          BACKEND_URL: https://my-project-production-9cd9.up.railway.app
+          FRONTEND_URL: https://my-project-mk2x.onrender.com
+        run: |
+          set -euo pipefail
+
+          echo "==> Waiting for Railway + Render deployments to settle..."
+
+          for attempt in {1..30}; do
+            if HEALTH="$(curl -fsS --max-time 10 "${BACKEND_URL}/health")" && \
+               SECTIONS="$(curl -fsS --max-time 10 "${BACKEND_URL}/api/sections")" && \
+               FRONTEND="$(curl -fsS --max-time 15 "${FRONTEND_URL}")"; then
+              export HEALTH SECTIONS FRONTEND
+
+              python - <<'PY'
+          import json, os, sys
+
+          health = json.loads(os.environ["HEALTH"])
+          sections = json.loads(os.environ["SECTIONS"])
+          frontend = os.environ["FRONTEND"]
+
+          assert health.get("success") is True
+          assert health.get("status") == "ok"
+
+          data = sections.get("data")
+          assert sections.get("success") is True
+          assert isinstance(data, list)
+          assert len(data) >= 10, f"Expected at least 10 CMS sections, got {len(data)}"
+
+          expected = {
+              "HEADER", "HERO", "ABOUT", "SERVICES", "PORTFOLIO",
+              "PRICING", "TESTIMONIALS", "BLOG", "CONTACT", "FOOTER"
+          }
+          actual = {item.get("key") for item in data}
+          missing = expected - actual
+          assert not missing, f"Missing CMS sections: {sorted(missing)}"
+
+          assert "No published content" not in frontend
+          assert "This site is being prepared" not in frontend
+
+          print(f"✓ /health OK: {health}")
+          print(f"✓ /api/sections OK: {len(data)} visible CMS sections")
+          print("✓ All 10 canonical CMS section keys are present")
+          print("✓ Render frontend returned seeded content (empty-state absent)")
+          PY
+
+              ADMIN_STATUS="$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 "${BACKEND_URL}/api/admin/sections")"
+              test "${ADMIN_STATUS}" = "401"
+              echo "✓ Admin endpoint rejects unauthenticated requests with HTTP 401"
+              exit 0
+            fi
+
+            echo "Attempt ${attempt}/30 not ready yet; retrying in 10s..."
+            sleep 10
+          done
+
+          echo "Production smoke tests failed: services did not become healthy in time."
+          exit 1
+
       - name: Production deployment summary
+        if: success()
         shell: bash
         run: |
           echo "=============================================="
-          echo "Production deployment handoff completed"
+          echo "Production deployment + smoke tests completed"
           echo "Commit: ${GITHUB_SHA}"
           echo "Railway: connected-source auto deployment"
           echo "Render: connected-source auto deployment"
+          echo "CMS seed: verified through public API"
+          echo "Admin auth: unauthenticated access rejected"
           echo "=============================================="
