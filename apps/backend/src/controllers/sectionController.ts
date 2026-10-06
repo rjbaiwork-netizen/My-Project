@@ -50,7 +50,8 @@ export const getAdminSections: AsyncHandler = async (_req, res) => {
 };
 
 export const updateSection: AsyncHandler = async (req, res) => {
-  const { id } = req.params;
+  const rawId = req.params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const { title, content } = req.body ?? {};
 
   if (!id) {
@@ -119,7 +120,8 @@ export const updateSection: AsyncHandler = async (req, res) => {
 };
 
 export const toggleSectionVisibility: AsyncHandler = async (req, res) => {
-  const { id } = req.params;
+  const rawId = req.params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const { isVisible } = req.body ?? {};
 
   if (!id) {
