@@ -65,13 +65,28 @@ jobs:
           echo "==> Waiting for Railway + Render deployments to settle..."
 
           for attempt in {1..30}; do
-            if HEALTH="$(curl -fsS --max-time 10 "${BACKEND_URL}/health")" && \
-               SECTIONS="$(curl -fsS --max-time 10 "${BACKEND_URL}/api/sections")" && \
-               FRONTEND="$(curl -fsS --max-time 15 "${FRONTEND_URL}")"; then
-              export HEALTH SECTIONS FRONTEND
+            if ! HEALTH="$(curl -fsS --max-time 10 "${BACKEND_URL}/health")"; then
+              echo "Attempt ${attempt}/30: /health not ready."
+              sleep 10
+              continue
+            fi
 
-              python - <<'PY'
-          import json, os, sys
+            if ! SECTIONS="$(curl -fsS --max-time 10 "${BACKEND_URL}/api/sections")"; then
+              echo "Attempt ${attempt}/30: /api/sections not ready."
+              sleep 10
+              continue
+            fi
+
+            if ! FRONTEND="$(curl -fsS --max-time 15 "${FRONTEND_URL}")"; then
+              echo "Attempt ${attempt}/30: Render frontend not ready."
+              sleep 10
+              continue
+            fi
+
+            export HEALTH SECTIONS FRONTEND
+
+            if ! python - <<'PY'
+          import json, os
 
           health = json.loads(os.environ["HEALTH"])
           sections = json.loads(os.environ["SECTIONS"])
@@ -101,15 +116,21 @@ jobs:
           print("✓ All 10 canonical CMS section keys are present")
           print("✓ Render frontend returned seeded content (empty-state absent)")
           PY
-
-              ADMIN_STATUS="$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 "${BACKEND_URL}/api/admin/sections")"
-              test "${ADMIN_STATUS}" = "401"
-              echo "✓ Admin endpoint rejects unauthenticated requests with HTTP 401"
-              exit 0
+            then
+              echo "Attempt ${attempt}/30: CMS/frontend content assertions are not ready."
+              sleep 10
+              continue
             fi
 
-            echo "Attempt ${attempt}/30 not ready yet; retrying in 10s..."
-            sleep 10
+            ADMIN_STATUS="$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 "${BACKEND_URL}/api/admin/sections")"
+            if [ "${ADMIN_STATUS}" != "401" ]; then
+              echo "Attempt ${attempt}/30: expected unauthenticated admin status 401, got ${ADMIN_STATUS}."
+              sleep 10
+              continue
+            fi
+
+            echo "✓ Admin endpoint rejects unauthenticated requests with HTTP 401"
+            exit 0
           done
 
           echo "Production smoke tests failed: services did not become healthy in time."
