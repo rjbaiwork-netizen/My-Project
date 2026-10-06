@@ -14,10 +14,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  RAILWAY_TOKEN: \${{ secrets.RAILWAY_TOKEN }}
+  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
   RAILWAY_PROJECT: My-Project
-  RENDER_API_KEY: \${{ secrets.RenderAPIKeys }}
-  RENDER_SERVICE_ID: \${{ secrets.RENDER_SERVICE_ID }}
+  RENDER_API_KEY: ${{ secrets.RenderAPIKeys }}
+  RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
 
 jobs:
   deploy:
@@ -89,7 +89,7 @@ jobs:
             --header "Accept: application/json" \
             --header "Content-Type: application/json" \
             --header "Authorization: Bearer ${RENDER_API_KEY}" \
-            --data "{\"commitId\":\"\${GITHUB_SHA}\",\"clearCache\":\"do_not_clear\"}")"
+            --data "{\"commitId\":\"${GITHUB_SHA}\",\"clearCache\":\"do_not_clear\"}")"
 
           deploy_id="$(printf '%s' "${response}" | jq -r '.id // .deploy.id // empty')"
 
@@ -105,7 +105,7 @@ jobs:
       - name: Wait for Render deployment
         shell: bash
         env:
-          RENDER_DEPLOY_ID: \${{ steps.render.outputs.render_deploy_id }}
+          RENDER_DEPLOY_ID: ${{ steps.render.outputs.render_deploy_id }}
         run: |
           set -euo pipefail
 
