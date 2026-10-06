@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient, SectionKey } from "../generated/prisma/client";
+import { Prisma, PrismaClient, SectionKey } from "../generated/prisma/client";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -15,7 +15,7 @@ const sections: Array<{
   key: SectionKey;
   title: string;
   order: number;
-  content: Record<string, unknown>;
+  content: Prisma.InputJsonObject;
 }> = [
   {
     key: SectionKey.HEADER,
