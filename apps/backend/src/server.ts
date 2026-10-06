@@ -1,7 +1,7 @@
 import "dotenv/config";
 import cors from "cors";
 import express, { type ErrorRequestHandler } from "express";
-import sectionRoutes from "./routes/sectionRoutes";
+import sectionRoutes from "./routes/sectionRoutes.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
