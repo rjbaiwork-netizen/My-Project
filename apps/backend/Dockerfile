@@ -26,6 +26,7 @@ ENV HOSTNAME=0.0.0.0
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder /app/apps/backend/src ./apps/backend/src
 COPY --from=builder /app/apps/backend/generated ./apps/backend/generated
 COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
 COPY --from=builder /app/apps/backend/prisma.config.ts ./apps/backend/prisma.config.ts
