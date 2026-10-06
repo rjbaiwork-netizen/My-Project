@@ -14,8 +14,6 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-  RAILWAY_PROJECT: My-Project
   RENDER_API_KEY: ${{ secrets.RenderAPIKeys }}
   RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
 
@@ -36,44 +34,22 @@ jobs:
         run: |
           set -euo pipefail
 
-          [[ -n "${RAILWAY_TOKEN}" ]] || { echo "::error::RAILWAY_TOKEN is not configured."; exit 1; }
           [[ -n "${RENDER_API_KEY}" ]] || { echo "::error::RenderAPIKeys is not configured."; exit 1; }
           [[ -n "${RENDER_SERVICE_ID}" ]] || { echo "::error::RENDER_SERVICE_ID is not configured."; exit 1; }
 
-          echo "✓ Required deployment secrets are present."
+          echo "✓ Render deployment secrets are present."
           echo "✓ Commit: ${GITHUB_SHA}"
+          echo "✓ Railway deployment is handled by Railway's connected GitHub source."
 
-      - name: Install Railway CLI
+      - name: Railway deployment handoff
         shell: bash
         run: |
           set -euo pipefail
-          npm install --global @railway/cli
-          railway --version
 
-      - name: Link Railway production project
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "==> Linking Railway project: ${RAILWAY_PROJECT}"
-          railway link --project "${RAILWAY_PROJECT}" --json
-          echo "✓ Railway project linked."
-
-      - name: Deploy Railway backend
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "==> Deploying backend to Railway..."
-          echo "==> Prisma migration is executed by the production backend Docker CMD."
-          railway up
-          echo "✓ Railway deployment command completed."
-
-      - name: Verify Railway deployment
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "==> Railway deployment status:"
-          railway status --json
-          echo "✓ Railway status command completed."
+          echo "==> Railway is connected directly to rjbaiwork-netizen/My-Project."
+          echo "==> A push to main triggers Railway's GitHub deployment automatically."
+          echo "==> This workflow does not require a Railway API token."
+          echo "✓ Railway deployment handoff complete."
 
       - name: Trigger Render deployment
         id: render
@@ -144,9 +120,8 @@ jobs:
         shell: bash
         run: |
           echo "=============================================="
-          echo "Production deployment completed successfully"
-          echo "Commit: ${GITHUB_SHA}"
-          echo "Railway: backend deployment completed"
-          echo "Railway: Prisma migration runs during container startup"
+          echo "Production deployment workflow completed"
+          echo "Commit:  ${GITHUB_SHA}"
+          echo "Railway: GitHub-connected deployment triggered by push"
           echo "Render: frontend deployment is LIVE"
           echo "=============================================="
