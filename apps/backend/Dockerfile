@@ -12,9 +12,10 @@ FROM deps AS builder
 COPY . .
 
 # Prisma 7 loads prisma.config.ts during generate/build.
-# Use a non-production placeholder at image-build time.
+# Use a non-production placeholder at image-build time so
+# prisma generate never requires a live database connection.
 ARG DATABASE_URL="postgresql://build:build@localhost:5432/build"
-ENV DATABASE_URL=$DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
 
 RUN npm run build --workspace=backend
 
