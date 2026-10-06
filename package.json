@@ -3,20 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "description": "Production-ready full-stack dynamic CMS monorepo",
-  "workspaces": [
-    "apps/frontend",
-    "apps/backend",
-    "packages/shared"
-  ],
+  "workspaces": ["apps/frontend","apps/backend","packages/shared"],
   "scripts": {
     "dev": "npm run dev --workspace=frontend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:backend": "npm run dev --workspace=backend",
     "build": "npm run build --workspaces",
     "build:frontend": "npm run build --workspace=frontend",
-    "start:frontend": "npm run start --workspace=frontend"
+    "build:backend": "npm run build --workspace=backend",
+    "start:frontend": "npm run start --workspace=frontend",
+    "db:generate": "npm run db:generate --workspace=backend",
+    "db:validate": "npm run db:validate --workspace=backend",
+    "db:migrate:deploy": "npm run db:migrate:deploy --workspace=backend",
+    "db:seed": "npm run db:seed --workspace=backend"
   },
-  "engines": {
-    "node": ">=20.9.0"
-  }
+  "engines": {"node": ">=20.9.0"}
 }
