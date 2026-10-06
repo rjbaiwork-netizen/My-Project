@@ -64,7 +64,7 @@ jobs:
           set -euo pipefail
           echo "==> Deploying backend to Railway..."
           echo "==> Prisma migration is executed by the production backend Docker CMD."
-          railway up --ci
+          railway up
           echo "✓ Railway deployment command completed."
 
       - name: Verify Railway deployment
