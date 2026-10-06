@@ -4,7 +4,7 @@ import {
   getPublicSections,
   toggleSectionVisibility,
   updateSection
-} from "../controllers/sectionController";
+} from "../controllers/sectionController.js";
 
 const router = Router();
 
