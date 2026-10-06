@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { Prisma } from "../../generated/prisma/client.js";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 
 type AsyncHandler = (
   req: Request,
