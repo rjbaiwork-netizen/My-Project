@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 
+import WorkspaceNav from "../../../components/layout/WorkspaceNav";
+
 export default function AIChatInterfacePage() {
   const [message, setMessage] = useState("");
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-12 text-white">
+      <WorkspaceNav theme="dark" />
       <div className="mx-auto max-w-5xl">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">My Project / AI</p>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">AI Chat Interface</h1>
