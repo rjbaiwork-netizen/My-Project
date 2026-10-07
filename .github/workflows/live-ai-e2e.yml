@@ -1,0 +1,111 @@
+name: Live AI E2E
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  live-ai-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Railway deployment
+        env:
+          API_BASE: https://my-project-production-9cd9.up.railway.app
+        run: |
+          for i in {1..30}; do
+            if curl -fsS "$API_BASE/health" >/tmp/health.json; then
+              echo "Backend healthy"
+              cat /tmp/health.json
+              exit 0
+            fi
+            echo "Waiting for backend... attempt $i/30"
+            sleep 10
+          done
+          echo "Backend did not become healthy"
+          exit 1
+
+      - name: Run live Chat -> Conversation -> Memory E2E
+        env:
+          API_BASE: https://my-project-production-9cd9.up.railway.app
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const base = process.env.API_BASE;
+
+          async function request(path, options = {}) {
+            const res = await fetch(base + path, {
+              ...options,
+              headers: { "content-type": "application/json", ...(options.headers || {}) }
+            });
+            const text = await res.text();
+            let body;
+            try { body = JSON.parse(text); } catch { body = { raw: text }; }
+            if (!res.ok) throw new Error(`${options.method || "GET"} ${path} -> ${res.status}: ${text}`);
+            return body;
+          }
+
+          const conversations = await request("/api/ai/conversations");
+          if (conversations.success !== true || !Array.isArray(conversations.data)) {
+            throw new Error("Conversation list contract failed");
+          }
+
+          const knowledge = await request("/api/ai/knowledge");
+          if (knowledge.success !== true || !Array.isArray(knowledge.data)) {
+            throw new Error("Knowledge list contract failed");
+          }
+
+          const marker = "LIVE-E2E-" + Date.now();
+          const chat = await request("/api/ai/chat", {
+            method: "POST",
+            body: JSON.stringify({
+              message: `Reply briefly and include this verification marker exactly: ${marker}`
+            })
+          });
+
+          if (chat.success !== true || !chat.data?.conversationId || !chat.data?.answer) {
+            throw new Error("Chat response contract failed");
+          }
+
+          if (!chat.data.answer.includes(marker)) {
+            throw new Error("AI response did not contain the verification marker");
+          }
+
+          const id = chat.data.conversationId;
+          const conversation = await request("/api/ai/conversations/" + id);
+
+          if (conversation.success !== true || !Array.isArray(conversation.data?.messages)) {
+            throw new Error("Conversation persistence contract failed");
+          }
+
+          const roles = conversation.data.messages.map(m => m.role);
+          if (!roles.includes("user") || !roles.includes("assistant")) {
+            throw new Error("Conversation does not contain both user and assistant messages");
+          }
+
+          const memories = await request("/api/ai/memories");
+          if (memories.success !== true || !Array.isArray(memories.data)) {
+            throw new Error("Memory list contract failed");
+          }
+
+          const found = memories.data.some(m => m.conversationId === id && m.content.includes(marker));
+          if (!found) {
+            throw new Error("Conversation memory was not persisted");
+          }
+
+          if (!Array.isArray(chat.data.knowledge) || !Array.isArray(chat.data.memories)) {
+            throw new Error("Chat context contract failed");
+          }
+
+          await request("/api/ai/conversations/" + id, { method: "DELETE" });
+
+          console.log(JSON.stringify({
+            status: "PASS",
+            conversationId: id,
+            knowledgeDocumentsAvailable: knowledge.data.length,
+            retrievedKnowledgeCount: chat.data.knowledge.length,
+            retrievedMemoryCount: chat.data.memories.length,
+            messageCount: conversation.data.messages.length
+          }, null, 2));
+          NODE
