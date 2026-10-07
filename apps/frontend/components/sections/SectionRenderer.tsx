@@ -1,20 +1,20 @@
 import type { ReactNode } from "react";
 import type { CMSSection, SectionKey } from "../../lib/api";
-import AboutSection from "./AboutSection";
-import BlogSection from "./BlogSection";
-import ContactSection from "./ContactSection";
-import FooterSection from "./FooterSection";
-import HeaderSection from "./HeaderSection";
+import AboutUs from "./AboutUs";
+import Blog from "./Blog";
+import ContactUs from "./ContactUs";
+import Footer from "./Footer";
+import Header from "./Header";
 import HeroSection from "./HeroSection";
-import PortfolioSection from "./PortfolioSection";
-import PricingSection from "./PricingSection";
-import ServicesSection from "./ServicesSection";
-import TestimonialsSection from "./TestimonialsSection";
+import Portfolio from "./Portfolio";
+import Pricing from "./Pricing";
+import Services from "./Services";
+import Testimonials from "./Testimonials";
 
 const renderers: Record<SectionKey, (props: { section: CMSSection }) => ReactNode> = {
-  HEADER: HeaderSection, HERO: HeroSection, ABOUT: AboutSection, SERVICES: ServicesSection,
-  PORTFOLIO: PortfolioSection, PRICING: PricingSection, TESTIMONIALS: TestimonialsSection,
-  BLOG: BlogSection, CONTACT: ContactSection, FOOTER: FooterSection
+  HEADER: Header, HERO: HeroSection, ABOUT: AboutUs, SERVICES: Services,
+  PORTFOLIO: Portfolio, PRICING: Pricing, TESTIMONIALS: Testimonials,
+  BLOG: Blog, CONTACT: ContactUs, FOOTER: Footer
 };
 
 export default function SectionRenderer({ section }: { section: CMSSection }) {
