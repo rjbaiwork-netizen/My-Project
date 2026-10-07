@@ -108,7 +108,9 @@ const purposeEnvKeys: Record<AIPurpose, string> = {
 function configuredKey(provider: ProviderDefinition, purpose: AIPurpose) {
   return provider.id === "openai"
     ? (process.env[purposeEnvKeys[purpose]] || process.env.OPENAI_API_KEY)
-    : process.env[provider.keyEnv];
+    : provider.id === "gemini"
+      ? (process.env.GEMINI_API_KEY || process.env["Gemini key"])
+      : process.env[provider.keyEnv];
 }
 
 function order() {
