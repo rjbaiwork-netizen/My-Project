@@ -1,0 +1,4 @@
+import { prisma } from "../lib/prisma.js";
+import { runAgent } from "../lib/agentOrchestrator.js";
+let running=false;
+export function startAIWorker(intervalMs=15000){const tick=async()=>{if(running)return;running=true;try{const job=await prisma.aIJob.findFirst({where:{status:"QUEUED",OR:[{scheduledAt:null},{scheduledAt:{lte:new Date()}}]},orderBy:{createdAt:"asc"}});if(!job)return;await prisma.aIJob.update({where:{id:job.id},data:{status:"RUNNING",attempts:{increment:1}}});try{if(!job.agentId)throw new Error("AI job has no agentId.");await runAgent(job.agentId,job.payload);await prisma.aIJob.update({where:{id:job.id},data:{status:"SUCCEEDED",lastError:null}});}catch(error){await prisma.aIJob.update({where:{id:job.id},data:{status:"FAILED",lastError:error instanceof Error?error.message:"AI job failed."}});}}finally{running=false;}};void tick();return setInterval(()=>void tick(),intervalMs);}
