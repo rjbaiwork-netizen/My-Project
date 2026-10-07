@@ -63,6 +63,8 @@ model AIAgent {
   runs        AIAgentRun[]
   jobs        AIJob[]
   brainCategories AIAgentBrainCategory[]
+  memories AIAgentMemory[]
+  knowledge AIAgentKnowledge[]
   automations AIAutomation[]
 }
 
@@ -73,7 +75,6 @@ model AIConversation {
   updatedAt DateTime     @updatedAt
   messages  AIMessage[]
   memories  AIMemory[]
-  agentLinks AIAgentMemory[]
 }
 
 model AIMessage {
@@ -191,6 +192,8 @@ model AIAgentBrainCategory {
   createdAt   DateTime @default(now())
   agent       AIAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
   metrics     AIBrainMetric[]
+  agentMemories AIAgentMemory[]
+  agentKnowledge AIAgentKnowledge[]
   @@unique([agentId, key])
   @@index([agentId, updatedAt])
 }
