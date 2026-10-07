@@ -6,7 +6,7 @@ type Agent={id:string;name:string;status:string};
 export default function AgentBrain(){
  const [agents,setAgents]=useState<Agent[]>([]);const [id,setId]=useState("");const [data,setData]=useState<{agent:Agent;overall:number;categories:Cat[]}>();
  const [error,setError]=useState("");
- const base=(process.env.NEXT_PUBLIC_API_URL??"").replace(//$/,"");
+ const base=(process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,"");
  useEffect(()=>{fetch(base+"/api/ai/agents").then(r=>r.json()).then(d=>{setAgents(d.data??[]);if(d.data?.[0])setId(d.data[0].id)}).catch(e=>setError(e.message));},[]);
  useEffect(()=>{if(!id)return;fetch(base+"/api/ai/agents/"+id+"/brain",{cache:"no-store"}).then(r=>r.json()).then(d=>{if(!d.success)throw Error(d?.error?.message);setData(d.data)}).catch(e=>setError(e.message));},[id]);
  return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-4 py-8 text-white sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl">
