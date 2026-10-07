@@ -86,7 +86,7 @@ export async function updateMemory(req:Request,res:Response){
       ...(metadata!==undefined?{metadata}:{}),
       ...(changedContent?{embedding:null}:{}),
     }});
-    if(changedContent)void embedText(memory.content).then(embedding=>prisma.aIMemory.update({where:{id:memory.id},data:{embedding}})).catch(error=>console.error("Memory re-embedding failed",error));
+    if(changedContent)await embedText(memory.content).then(embedding=>prisma.aIMemory.update({where:{id:memory.id},data:{embedding}}));
     res.json({success:true,data:memory});
   }catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to update memory."}});}
 }
@@ -117,7 +117,7 @@ export async function createMemory(req:Request,res:Response){
         metadata:req.body?.metadata??{type:"manual"}
       }
     });
-    void embedText(content).then(embedding=>prisma.aIMemory.update({where:{id:memory.id},data:{embedding}})).catch(error=>console.error("Memory embedding failed",error));
+    await embedText(content).then(embedding=>prisma.aIMemory.update({where:{id:memory.id},data:{embedding}}));
     res.status(201).json({success:true,data:memory});
   }catch(error){
     res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to create memory."}});
