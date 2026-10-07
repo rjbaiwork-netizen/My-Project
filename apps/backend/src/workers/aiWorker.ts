@@ -151,6 +151,7 @@ export async function startAIWorker(intervalMs=15000){
     if(running)return;
     running=true;
     lastTickAt=new Date();
+    lastError=null;
     try{
       const automationRun=await prisma.aIAutomationRun.findFirst({where:{status:"QUEUED"},orderBy:{createdAt:"asc"}});
       if(automationRun)await executeAutomationRun(automationRun.id);
