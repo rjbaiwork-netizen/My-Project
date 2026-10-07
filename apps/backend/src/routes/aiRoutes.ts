@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addKnowledge, chat, createJob, listAgents, listJobs, listKnowledge, orchestrate, runAgentRoute } from "../controllers/aiController.js";
+import { addKnowledge, chat, createJob, listAgents, listJobs, listKnowledge, orchestrate, runAgentRoute, agentAutomationOverview, createAutomation } from "../controllers/aiController.js";
 const router=Router();
 router.post("/chat",chat);
 router.get("/agents",listAgents);
@@ -9,4 +9,6 @@ router.get("/knowledge",listKnowledge);
 router.post("/knowledge",addKnowledge);
 router.get("/jobs",listJobs);
 router.post("/jobs",createJob);
+router.get("/agent-automation",agentAutomationOverview);
+router.post("/automations",createAutomation);
 export default router;
