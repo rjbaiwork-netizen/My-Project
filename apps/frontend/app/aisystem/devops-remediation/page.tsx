@@ -1,27 +1,7 @@
 "use client";
 import MobileAppShell from "../../../../components/layout/MobileAppShell";
-
-const cards = [
-  ["Overview","এই workspace-এর প্রধান capability ও বর্তমান অবস্থা এক নজরে দেখুন।","Ready"],
-  ["Recent activity","সাম্প্রতিক activity, result এবং system updates এখানে দেখা যাবে।","Available"],
-  ["Quick action","এই capability থেকে প্রয়োজনীয় কাজ দ্রুত শুরু করুন।","Open"]
-];
-
-export default function Page() {
-  return (
-    <MobileAppShell theme="dark">
-      <main className="px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-xs font-bold uppercase tracking-[.18em] text-blue-400">AI System</p>
-          <div className="mt-2 flex items-start gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 text-xl" aria-hidden="true">🚑</span>
-            <div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">System Recovery</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">Deployment, build এবং health সমস্যা শনাক্ত ও controlled recovery workflow পরিচালনা করুন।</p></div>
-          </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {cards.map(([label,text,status])=><section key={label} className="rounded-2xl border border-white/10 bg-white/[.05] p-5 shadow-xl shadow-black/10"><div className="flex items-center justify-between"><h2 className="font-bold">{label}</h2><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold text-emerald-300">{status}</span></div><p className="mt-3 text-sm leading-6 text-slate-400">{text}</p></section>)}
-          </div>
-        </div>
-      </main>
-    </MobileAppShell>
-  );
-}
+import {useEffect,useState} from "react";
+const api=()=>((process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,""));
+export default function Page(){const [checks,setChecks]=useState<any[]>([]);const [running,setRunning]=useState(false);const [message,setMessage]=useState("");
+async function diagnose(){setRunning(true);setMessage("");try{const [h,r]=await Promise.all([fetch(api()+"/health",{cache:"no-store"}),fetch(api()+"/ready",{cache:"no-store"})]);const hd=await h.json(),rd=await r.json();setChecks([["Backend health",h.ok&&hd.status==="ok",hd.status??"unknown"],["Database readiness",r.ok&&rd.database==="ready",rd.database??"unknown"],["AI worker",Boolean(rd.worker?.started&&!rd.worker?.lastError),rd.worker?.lastError??"running"],["Automation engine",rd.automationEngineVersion==="2.0",rd.automationEngineVersion??"unknown"]])}catch(e){setMessage(e instanceof Error?e.message:"Diagnostic request failed.")}finally{setRunning(false)}}useEffect(()=>{void diagnose()},[]);
+return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-4 py-8 text-white"><div className="mx-auto max-w-5xl"><p className="text-xs font-bold uppercase tracking-[.2em] text-blue-400">AI System / Recovery</p><h1 className="mt-2 text-3xl font-bold">System Recovery Diagnostics</h1><p className="mt-3 text-slate-400">Production infrastructure-এর safe, read-only diagnostics চালান। Destructive recovery এখানে স্বয়ংক্রিয়ভাবে করা হয় না।</p><button onClick={()=>void diagnose()} disabled={running} className="mt-6 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-950">{running?"Checking…":"Run diagnostics"}</button>{message&&<p className="mt-4 text-sm text-red-300">{message}</p>}<div className="mt-6 space-y-2">{checks.map(([n,ok,v])=><div key={n} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4"><span>{n}</span><span className={ok?"text-emerald-300":"text-amber-300"}>{ok?"PASS":"CHECK"} • {v}</span></div>)}</div></div></main></MobileAppShell>}
