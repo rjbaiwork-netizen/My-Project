@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import { embedText, indexKnowledge, retrieveKnowledge, retrieveMemories } from "../lib/ai.js";
 
 export async function listConversations(_req:Request,res:Response){
