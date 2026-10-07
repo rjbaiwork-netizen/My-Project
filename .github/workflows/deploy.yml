@@ -32,6 +32,20 @@ jobs:
 
           echo "✓ GitHub commit: ${GITHUB_SHA}"
           echo "✓ Branch: ${GITHUB_REF_NAME}"
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Compile shared contracts
+        run: npm run build:shared
+
+      - name: Compile frontend
+        run: npm run build:frontend
+
+      - name: Compile backend
+        env:
+          DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
+        run: npm run build:backend
           echo "✓ Railway source: rjbaiwork-netizen/My-Project"
           echo "✓ Render source: rjbaiwork-netizen/My-Project"
 
