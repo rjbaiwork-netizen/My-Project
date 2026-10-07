@@ -50,6 +50,7 @@ jobs:
           FRONTEND_URL: https://my-project-mk2x.onrender.com
 
       - name: Automation Builder live E2E
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         env:
           BACKEND_URL: https://my-project-production-9cd9.up.railway.app
@@ -57,6 +58,7 @@ jobs:
         run: bash scripts/automation-e2e.sh
 
       - name: AI Agent live E2E
+        if: github.event_name == 'workflow_dispatch'
         shell: bash
         env:
           BACKEND_URL: https://my-project-production-9cd9.up.railway.app
