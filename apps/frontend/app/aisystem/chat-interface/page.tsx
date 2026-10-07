@@ -28,12 +28,12 @@ export default function AIChatInterfacePage() {
 
   return (
     <MobileAppShell theme="dark">
-      <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
+      <main className="px-4 py-8 text-white sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">My Project / AI System</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">AI Assistant / Chat Agent</h1>
-          <p className="mt-3 text-slate-400">Project-aware conversational AI with persistent conversation memory and knowledge retrieval.</p>
-          <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
+          <p className="text-xs font-bold uppercase tracking-[.18em] text-blue-400">AI System / Conversation</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">AI Chat</h1>
+          <p className="mt-3 text-slate-400">Ask questions, work with your knowledge, and keep conversations in one professional workspace.</p>
+          <div className="mt-8 rounded-2xl border border-white/10 bg-slate-900/80 p-5 shadow-2xl shadow-black/20">
             {answer&&<div className="mb-5 rounded-xl bg-black/20 p-4 text-sm leading-6 text-slate-200 whitespace-pre-wrap">{answer}</div>}
             {error&&<div className="mb-4 rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">{error}</div>}
             <textarea value={message} onChange={e=>setMessage(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();void send();}}} placeholder="Ask the My-Project AI Assistant..." className="min-h-32 w-full resize-y rounded-xl bg-black/20 p-4 text-sm outline-none ring-1 ring-white/10 placeholder:text-slate-500" />
