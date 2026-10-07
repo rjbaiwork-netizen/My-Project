@@ -53,6 +53,7 @@ export async function brainProfile(req:Request,res:Response){
       const dataCount=knowledgeCount+memoryCount;
       const progress=Math.min(100,Math.round((knowledgeCount+memoryCount+c.dataCount)/Math.max(1,10+c.dataCount)*100));
       await prisma.aIAgentBrainCategory.update({where:{id:c.id},data:{knowledgeCount,memoryCount,dataCount,progress}});
+      await prisma.aIBrainMetric.create({data:{categoryId:c.id,progress,dataCount,memoryCount,knowledgeCount}});
       return {...c,knowledgeCount,memoryCount,dataCount,progress};
     }));
     const overall=categories.length?Math.round(categories.reduce((sum,c)=>sum+c.progress,0)/categories.length):0;
