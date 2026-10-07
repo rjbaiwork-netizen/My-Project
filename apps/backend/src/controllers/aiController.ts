@@ -10,71 +10,10 @@ export async function createJob(req:Request,res:Response){const {type,payload,ag
 export async function listJobs(_req:Request,res:Response){try{res.json({success:true,data:await prisma.aIJob.findMany({orderBy:{createdAt:"desc"},take:100})});}catch{res.status(500).json({success:false,error:{message:"Unable to load AI jobs."}});}}
 export async function addKnowledge(req:Request,res:Response){const {title,content,source,metadata}=req.body??{};if(typeof title!=="string"||!title.trim()||typeof content!=="string"||!content.trim())return void res.status(400).json({success:false,error:{message:"title and content are required."}});const doc=await prisma.aIKnowledgeDocument.create({data:{title:title.trim(),content:content.trim(),source:typeof source==="string"?source:undefined,metadata:metadata??undefined}});void indexKnowledge(doc.id).catch(()=>undefined);res.status(201).json({success:true,data:doc});}
 export async function listKnowledge(_req:Request,res:Response){try{res.json({success:true,data:await prisma.aIKnowledgeDocument.findMany({orderBy:{updatedAt:"desc"}})});}catch{res.status(500).json({success:false,error:{message:"Unable to load knowledge base."}});}}
-
-
-export async function agentAutomationOverview(_req:Request,res:Response){
-  try{
-    const agents=await prisma.aIAgent.findMany({
-      include:{brainCategories:{orderBy:{updatedAt:"desc"}},_count:{select:{runs:true,jobs:true,automations:true}}},
-      orderBy:{createdAt:"asc"}
-    });
-    const automations=await prisma.aIAutomation.findMany({include:{agent:true},orderBy:{updatedAt:"desc"},take:50});
-    res.json({success:true,data:{agents,automations}});
-  }catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load agent automation workspace."}});}
-}
-
-export async function createAutomation(req:Request,res:Response){
-  const {name,description,trigger,conditions,actions,agentId}=req.body??{};
-  if(typeof name!=="string"||!name.trim()||!trigger||!actions)return void res.status(400).json({success:false,error:{message:"name, trigger and actions are required."}});
-  try{
-    const automation=await prisma.aIAutomation.create({data:{
-      name:name.trim(),description:typeof description==="string"?description:undefined,
-      trigger,conditions:conditions??undefined,actions,
-      agentId:typeof agentId==="string"?agentId:undefined
-    }});
-    res.status(201).json({success:true,data:automation});
-  }catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to create automation."}});}
-}
-
-
-export async function brainProfile(req:Request,res:Response){
-  try{
-    const agentId=String(req.params.agentId);
-    const agent=await prisma.aIAgent.findUnique({
-      where:{id:agentId},
-      include:{brainCategories:{include:{metrics:{orderBy:{metricDate:"asc"},take:90}},orderBy:{key:"asc"}}}
-    });
-    if(!agent)return void res.status(404).json({success:false,error:{message:"Agent not found."}});
-    const categories=await Promise.all(agent.brainCategories.map(async c=>{
-      const [knowledgeCount,memoryCount]=await Promise.all([
-        prisma.aIAgentKnowledge.count({where:{agentId,categoryId:c.id}}),
-        prisma.aIAgentMemory.count({where:{agentId,categoryId:c.id}})
-      ]);
-      const dataCount=knowledgeCount+memoryCount;
-      const progress=Math.min(100,Math.round((knowledgeCount+memoryCount+c.dataCount)/Math.max(1,10+c.dataCount)*100));
-      await prisma.aIAgentBrainCategory.update({where:{id:c.id},data:{knowledgeCount,memoryCount,dataCount,progress}});
-      await prisma.aIBrainMetric.create({data:{categoryId:c.id,progress,dataCount,memoryCount,knowledgeCount}});
-      return {...c,knowledgeCount,memoryCount,dataCount,progress};
-    }));
-    const overall=categories.length?Math.round(categories.reduce((sum,c)=>sum+c.progress,0)/categories.length):0;
-    res.json({success:true,data:{agent:{id:agent.id,name:agent.name,status:agent.status},overall,categories}});
-  }catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load brain profile."}});}
-}
-
-export async function linkKnowledgeToAgent(req:Request,res:Response){
-  try{
-    const agentId=String(req.params.agentId), knowledgeId=String(req.body?.knowledgeId), categoryId=typeof req.body?.categoryId==="string"?req.body.categoryId:undefined;
-    if(!knowledgeId)return void res.status(400).json({success:false,error:{message:"knowledgeId is required."}});
-    const link=await prisma.aIAgentKnowledge.upsert({where:{agentId_knowledgeId:{agentId,knowledgeId}},update:{categoryId},create:{agentId,knowledgeId,categoryId}});
-    res.status(201).json({success:true,data:link});
-  }catch(error){res.status(400).json({success:false,error:{message:error instanceof Error?error.message:"Unable to link knowledge."}});}
-}
-
-export async function linkMemoryToAgent(req:Request,res:Response){
-  try{
-    const agentId=String(req.params.agentId), memoryId=String(req.body?.memoryId), categoryId=typeof req.body?.categoryId==="string"?req.body.categoryId:undefined;
-    if(!memoryId)return void res.status(400).json({success:false,error:{message:"memoryId is required."}});
-    const link=await prisma.aIAgentMemory.upsert({where:{agentId_memoryId:{agentId,memoryId}},update:{categoryId},create:{agentId,memoryId,categoryId}});
-    res.status(201).json({success:true,data:link});
-  }catch(error){res.status(400).json({success:false,error:{message:error instanceof Error?error.message:"Unable to link memory."}});}
-}
+export async function agentAutomationOverview(_req:Request,res:Response){try{const agents=await prisma.aIAgent.findMany({include:{brainCategories:{orderBy:{updatedAt:"desc"}},_count:{select:{runs:true,jobs:true,automations:true}}},orderBy:{createdAt:"asc"}});const automations=await prisma.aIAutomation.findMany({include:{agent:true,runs:{orderBy:{createdAt:"desc"},take:5}},orderBy:{updatedAt:"desc"},take:50});res.json({success:true,data:{agents,automations}});}catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load agent automation workspace."}});}}
+export async function createAutomation(req:Request,res:Response){const {name,description,trigger,conditions,actions,agentId}=req.body??{};if(typeof name!=="string"||!name.trim()||!trigger||!actions)return void res.status(400).json({success:false,error:{message:"name, trigger and actions are required."}});try{const automation=await prisma.aIAutomation.create({data:{name:name.trim(),description:typeof description==="string"?description:undefined,trigger,conditions:conditions??undefined,actions,agentId:typeof agentId==="string"?agentId:undefined}});res.status(201).json({success:true,data:automation});}catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to create automation."}});}}
+export async function runAutomation(req:Request,res:Response){const automationId=String(req.params.id);try{const automation=await prisma.aIAutomation.findUnique({where:{id:automationId}});if(!automation)return void res.status(404).json({success:false,error:{message:"Automation not found."}});if(automation.status==="PAUSED")return void res.status(409).json({success:false,error:{message:"Automation is paused."}});const run=await prisma.aIAutomationRun.create({data:{automationId,input:req.body?.input??{},status:"QUEUED"}});res.status(202).json({success:true,data:run});}catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to queue automation."}});}}
+export async function listAutomationRuns(req:Request,res:Response){try{const automationId=String(req.params.id);res.json({success:true,data:await prisma.aIAutomationRun.findMany({where:{automationId},orderBy:{createdAt:"desc"},take:50})});}catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load automation runs."}});}}
+export async function brainProfile(req:Request,res:Response){try{const agentId=String(req.params.agentId);const agent=await prisma.aIAgent.findUnique({where:{id:agentId},include:{brainCategories:{include:{metrics:{orderBy:{metricDate:"asc"},take:90}},orderBy:{key:"asc"}}}});if(!agent)return void res.status(404).json({success:false,error:{message:"Agent not found."}});const categories=await Promise.all(agent.brainCategories.map(async c=>{const [knowledgeCount,memoryCount]=await Promise.all([prisma.aIAgentKnowledge.count({where:{agentId,categoryId:c.id}}),prisma.aIAgentMemory.count({where:{agentId,categoryId:c.id}})]);const dataCount=knowledgeCount+memoryCount;const progress=Math.min(100,Math.round((knowledgeCount+memoryCount+c.dataCount)/Math.max(1,10+c.dataCount)*100));await prisma.aIAgentBrainCategory.update({where:{id:c.id},data:{knowledgeCount,memoryCount,dataCount,progress}});await prisma.aIBrainMetric.create({data:{categoryId:c.id,progress,dataCount,memoryCount,knowledgeCount}});return {...c,knowledgeCount,memoryCount,dataCount,progress};}));const overall=categories.length?Math.round(categories.reduce((sum,c)=>sum+c.progress,0)/categories.length):0;res.json({success:true,data:{agent:{id:agent.id,name:agent.name,status:agent.status},overall,categories}});}catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load brain profile."}});}}
+export async function linkKnowledgeToAgent(req:Request,res:Response){try{const agentId=String(req.params.agentId),knowledgeId=String(req.body?.knowledgeId),categoryId=typeof req.body?.categoryId==="string"?req.body.categoryId:undefined;if(!knowledgeId)return void res.status(400).json({success:false,error:{message:"knowledgeId is required."}});const link=await prisma.aIAgentKnowledge.upsert({where:{agentId_knowledgeId:{agentId,knowledgeId}},update:{categoryId},create:{agentId,knowledgeId,categoryId}});res.status(201).json({success:true,data:link});}catch(error){res.status(400).json({success:false,error:{message:error instanceof Error?error.message:"Unable to link knowledge."}});}}
+export async function linkMemoryToAgent(req:Request,res:Response){try{const agentId=String(req.params.agentId),memoryId=String(req.body?.memoryId),categoryId=typeof req.body?.categoryId==="string"?req.body.categoryId:undefined;if(!memoryId)return void res.status(400).json({success:false,error:{message:"memoryId is required."}});const link=await prisma.aIAgentMemory.upsert({where:{agentId_memoryId:{agentId,memoryId}},update:{categoryId},create:{agentId,memoryId,categoryId}});res.status(201).json({success:true,data:link});}catch(error){res.status(400).json({success:false,error:{message:error instanceof Error?error.message:"Unable to link memory."}});}}
