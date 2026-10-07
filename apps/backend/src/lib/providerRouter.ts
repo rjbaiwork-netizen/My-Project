@@ -1,0 +1,112 @@
+import { prisma } from "./prisma.js";
+
+export type AIPurpose = "knowledge"|"agent"|"production";
+export type AIOperation = "generate"|"embed";
+
+type ProviderDefinition = {
+  id:string; name:string; protocol:"openai-responses"|"openai-chat"|"gemini";
+  keyEnv:string; baseUrl:string; models:Partial<Record<AIPurpose,string>> & {embed?:string};
+  capabilities:string[];
+};
+
+const providers:ProviderDefinition[]=[
+  {id:"openai",name:"OpenAI",protocol:"openai-responses",keyEnv:"OPENAI_API_KEY",baseUrl:"https://api.openai.com/v1",
+   models:{knowledge:process.env.OPENAI_KNOWLEDGE_MODEL??"gpt-6-luna",agent:process.env.OPENAI_AGENT_MODEL??"gpt-6-luna",production:process.env.OPENAI_PRODUCTION_MODEL??"gpt-6-luna",embed:process.env.AI_EMBEDDING_MODEL??"text-embedding-3-small"},
+   capabilities:["chat","agent","content","embedding","rag"]},
+  {id:"gemini",name:"Google Gemini",protocol:"gemini",keyEnv:"GEMINI_API_KEY",baseUrl:"https://generativelanguage.googleapis.com/v1beta",
+   models:{knowledge:process.env.GEMINI_KNOWLEDGE_MODEL??"gemini-3.8-flash",agent:process.env.GEMINI_AGENT_MODEL??"gemini-3.8-flash",production:process.env.GEMINI_PRODUCTION_MODEL??"gemini-3.8-flash",embed:process.env.GEMINI_EMBEDDING_MODEL??"gemini-embedding-2"},
+   capabilities:["chat","agent","content","embedding","rag","multimodal"]},
+  ...loadOpenAICompatibleProviders()
+];
+
+function loadOpenAICompatibleProviders():ProviderDefinition[]{
+  const raw=process.env.AI_PROVIDER_REGISTRY_JSON;if(!raw)return [];
+  try{
+    const list=JSON.parse(raw);if(!Array.isArray(list))return [];
+    return list.filter((p:any)=>p?.id&&p?.keyEnv&&p?.baseUrl).map((p:any)=>({
+      id:String(p.id),name:String(p.name??p.id),protocol:"openai-chat" as const,keyEnv:String(p.keyEnv),
+      baseUrl:String(p.baseUrl).replace(/\/$/,""),models:{...(p.models??{})},
+      capabilities:Array.isArray(p.capabilities)?p.capabilities.map(String):["chat","agent","content"]
+    }));
+  }catch(error){console.error("[AI_PROVIDER_REGISTRY] invalid registry JSON",error);return [];}
+}
+
+const purposeEnvKeys:Record<AIPurpose,string>={knowledge:"My-Project Knowledge",agent:"My-Project AI Agent",production:"My-Project Production AI"};
+
+function configuredKey(provider:ProviderDefinition,purpose:AIPurpose){
+  return provider.id==="openai"?(process.env[purposeEnvKeys[purpose]]||process.env.OPENAI_API_KEY):process.env[provider.keyEnv];
+}
+function order(){return [...new Set((process.env.AI_PROVIDER_ORDER??"openai,gemini").split(",").map(x=>x.trim()).filter(Boolean))];}
+function candidates(operation:AIOperation,purpose:AIPurpose){
+  return order().map(id=>providers.find(p=>p.id===id)).filter((p):p is ProviderDefinition=>Boolean(p))
+    .filter(p=>Boolean(configuredKey(p,purpose))).filter(p=>operation==="embed"?p.capabilities.includes("embedding"):p.capabilities.includes("chat"));
+}
+async function logEvent(data:{provider:string;purpose:AIPurpose;operation:AIOperation;success:boolean;statusCode?:number;error?:string;latencyMs:number;fallbackFrom?:string|null;model?:string}){
+  try{await prisma.aIProviderEvent.create({data});}catch(error){console.error("[AI_PROVIDER_LOG]",error);}
+}
+function providerError(message:string,statusCode?:number){return Object.assign(new Error(message),{statusCode});}
+
+async function callOpenAIResponses(p:ProviderDefinition,messages:{role:string;content:string}[],purpose:AIPurpose){
+  const key=configuredKey(p,purpose)!;const model=p.models[purpose]??"gpt-6-luna";
+  const response=await fetch(`${p.baseUrl}/responses`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${key}`},
+    body:JSON.stringify({model,input:messages.map(m=>({role:m.role,content:[{type:"input_text",text:m.content}]}))})});
+  const body=await response.text();if(!response.ok)throw providerError(body,response.status);const data=JSON.parse(body);
+  return {text:typeof data.output_text==="string"?data.output_text:"",model};
+}
+async function callOpenAIChat(p:ProviderDefinition,messages:{role:string;content:string}[],purpose:AIPurpose){
+  const key=configuredKey(p,purpose)!;const model=p.models[purpose]??"";
+  const response=await fetch(`${p.baseUrl}/chat/completions`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${key}`},
+    body:JSON.stringify({model,messages,temperature:0.2})});
+  const body=await response.text();if(!response.ok)throw providerError(body,response.status);const data=JSON.parse(body);
+  return {text:data.choices?.[0]?.message?.content??"",model};
+}
+async function callGemini(p:ProviderDefinition,messages:{role:string;content:string}[],purpose:AIPurpose){
+  const key=configuredKey(p,purpose)!;const model=p.models[purpose]!;
+  const system=messages.filter(m=>m.role==="system").map(m=>m.content).join("\n\n");
+  const contents=messages.filter(m=>m.role!=="system").map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}));
+  const url=`${p.baseUrl}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+  const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...(system?{systemInstruction:{parts:[{text:system}]}}:{}),contents})});
+  const body=await response.text();if(!response.ok)throw providerError(body,response.status);const data=JSON.parse(body);
+  return {text:data.candidates?.[0]?.content?.parts?.map((x:any)=>x.text??"").join("")??"",model};
+}
+async function callEmbedding(p:ProviderDefinition,input:string,purpose:AIPurpose){
+  const key=configuredKey(p,purpose)!;const model=p.models.embed!;
+  if(p.protocol==="gemini"){
+    const response=await fetch(`${p.baseUrl}/models/${encodeURIComponent(model)}:embedContent?key=${encodeURIComponent(key)}`,{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:`models/${model}`,content:{parts:[{text:input}]}})});
+    const body=await response.text();if(!response.ok)throw providerError(body,response.status);const data=JSON.parse(body);
+    const vector=data.embedding?.values??data.embeddings?.[0]?.values;if(!Array.isArray(vector))throw new Error("Gemini embedding response did not contain a vector.");
+    return {vector,model};
+  }
+  const response=await fetch(`${p.baseUrl}/embeddings`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${key}`},body:JSON.stringify({model,input})});
+  const body=await response.text();if(!response.ok)throw providerError(body,response.status);const data=JSON.parse(body);
+  const vector=data.data?.[0]?.embedding;if(!Array.isArray(vector))throw new Error("Embedding response did not contain a vector.");return {vector,model};
+}
+
+export async function generateAI(messages:{role:"system"|"user"|"assistant";content:string}[],purpose:AIPurpose="production"){
+  let lastError:unknown;const list=candidates("generate",purpose);
+  if(!list.length)throw new Error(`No configured AI provider is available for ${purpose} generation.`);
+  for(let i=0;i<list.length;i++){const p=list[i],started=Date.now(),fallbackFrom=i?list[i-1].id:null;
+    try{
+      const result=p.protocol==="openai-responses"?await callOpenAIResponses(p,messages,purpose):p.protocol==="gemini"?await callGemini(p,messages,purpose):await callOpenAIChat(p,messages,purpose);
+      await logEvent({provider:p.id,purpose,operation:"generate",success:true,latencyMs:Date.now()-started,fallbackFrom,model:result.model});
+      if(fallbackFrom)console.warn(`[AI_FAILOVER] ${fallbackFrom} -> ${p.id} for ${purpose}`);return result.text;
+    }catch(error){lastError=error;await logEvent({provider:p.id,purpose,operation:"generate",success:false,statusCode:(error as any)?.statusCode,error:error instanceof Error?error.message:String(error),latencyMs:Date.now()-started,fallbackFrom,model:p.models[purpose]});}
+  }
+  throw lastError instanceof Error?lastError:new Error("All AI providers failed.");
+}
+
+export async function embedText(input:string,purpose:AIPurpose="knowledge"){
+  let lastError:unknown;const list=candidates("embed",purpose);
+  if(!list.length)throw new Error(`No configured AI provider is available for ${purpose} embeddings.`);
+  for(let i=0;i<list.length;i++){const p=list[i],started=Date.now(),fallbackFrom=i?list[i-1].id:null;
+    try{
+      const result=await callEmbedding(p,input,purpose);await logEvent({provider:p.id,purpose,operation:"embed",success:true,latencyMs:Date.now()-started,fallbackFrom,model:result.model});
+      if(fallbackFrom)console.warn(`[AI_FAILOVER] ${fallbackFrom} -> ${p.id} for ${purpose} embedding`);
+      return {vector:result.vector as number[],provider:p.id,model:result.model};
+    }catch(error){lastError=error;await logEvent({provider:p.id,purpose,operation:"embed",success:false,statusCode:(error as any)?.statusCode,error:error instanceof Error?error.message:String(error),latencyMs:Date.now()-started,fallbackFrom,model:p.models.embed});}
+  }
+  throw lastError instanceof Error?lastError:new Error("All embedding providers failed.");
+}
+export function getProviderRegistry(){return providers.map(p=>({id:p.id,name:p.name,protocol:p.protocol,keyConfigured:Boolean(configuredKey(p,"production")),capabilities:p.capabilities,models:p.models,enabled:order().includes(p.id)}));}
+export async function getProviderEvents(limit=100){return prisma.aIProviderEvent.findMany({orderBy:{createdAt:"desc"},take:Math.min(500,Math.max(1,limit))});}
