@@ -3,6 +3,8 @@ name: Production CI/CD
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -45,6 +47,7 @@ jobs:
           echo "✓ Required automation credentials are present"
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
           RENDER_API_KEY: ${{ secrets.RenderAPIKeys }}
 
       - name: Railway -> Render secret synchronization + self-healing production QA
