@@ -1,4 +1,5 @@
 "use client";
+import MobileAppShell from "../../../components/layout/MobileAppShell";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import SectionEditModal from "../../../components/admin/SectionEditModal";
@@ -91,7 +92,8 @@ export default function AdminSystemConfigPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
+    <MobileAppShell theme="light">
+      <main className="min-h-screen bg-slate-50 text-slate-950">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <header className="mb-8 flex flex-col gap-5 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -159,5 +161,6 @@ export default function AdminSystemConfigPage() {
       </div>
       <SectionEditModal section={editingSection} saving={savingId === editingSection?.id} onClose={() => { if (!savingId) setEditingSection(null); }} onSave={handleSave} />
     </main>
+    </MobileAppShell>
   );
 }
