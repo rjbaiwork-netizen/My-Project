@@ -150,6 +150,24 @@ async function main() {
   }
 
   for(const agent of agents)await prisma.aIAgent.upsert({where:{key:agent.key},update:{name:agent.name,description:agent.description,systemPrompt:agent.systemPrompt},create:agent});
+  const categories = [
+    ["knowledge","Knowledge","Verified information available to the agent."],
+    ["memory","Memory","Persistent useful context learned from interactions."],
+    ["website","Website","Website structure, content and operational knowledge."],
+    ["content","Content","Content patterns, drafts, preferences and history."],
+    ["automation","Automation","Automation rules, workflows and execution patterns."],
+    ["tasks","Tasks","Task history, outcomes and reusable task context."]
+  ];
+  const seededAgents = await prisma.aIAgent.findMany();
+  for (const agent of seededAgents) {
+    for (const [key,name,description] of categories) {
+      await prisma.aIAgentBrainCategory.upsert({
+        where:{agentId_key:{agentId:agent.id,key}},
+        update:{name,description},
+        create:{agentId:agent.id,key,name,description,progress:0}
+      });
+    }
+  }
   console.log(`Seeded ${sections.length} CMS sections and ${agents.length} AI agents.`);
 }
 
