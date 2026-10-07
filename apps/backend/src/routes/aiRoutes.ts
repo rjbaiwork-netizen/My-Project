@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { addKnowledge, chat, createJob, listAgents, getAgent, createAgent, updateAgent, listAgentRuns, listJobs, listKnowledge, orchestrate, runAgentRoute, agentAutomationOverview, createAutomation, updateAutomation, runAutomation, listAutomationRuns, approveAutomationRun, retryAutomationRun, diagnoseAutomation, brainProfile, linkKnowledgeToAgent, linkMemoryToAgent, runAgentChain, controlCenter } from "../controllers/aiController.js";
-import { listConversations, getConversation, renameConversation, deleteConversation, listMemories, createMemory, updateMemory, deleteMemory, searchMemories, updateKnowledge, deleteKnowledge, searchKnowledge } from "../controllers/aiContextController.js";
-const router=Router();
+import { reindexKnowledgeRoute } from "../controllers/aiController.js";\nimport { listAIProviders, listAIProviderEvents } from "../controllers/aiProviderController.js";\nimport { listConversations, getConversation, renameConversation, deleteConversation, listMemories, createMemory, updateMemory, deleteMemory, searchMemories, updateKnowledge, deleteKnowledge, searchKnowledge } from "../controllers/aiContextController.js";
+const router=Router();\nrouter.get("/providers",listAIProviders);\nrouter.get("/providers/events",listAIProviderEvents);\nrouter.post("/providers/reindex-knowledge",reindexKnowledgeRoute);
 router.post("/chat",chat);
 router.get("/conversations",listConversations);
 router.get("/conversations/:id",getConversation);
