@@ -6,16 +6,16 @@ COPY package.json ./
 COPY apps/frontend/package.json ./apps/frontend/
 COPY apps/backend/package.json ./apps/backend/
 COPY packages/shared/package.json ./packages/shared/
-RUN npm install
+RUN npm install --ignore-scripts
 
 FROM deps AS builder
 COPY . .
 
 # Prisma 7 loads prisma.config.ts during generate/build.
-# Use a non-production placeholder at image-build time so
-# prisma generate never requires a live database connection.
-ARG DATABASE_URL="postgresql://build:build@localhost:5432/build"
-ENV DATABASE_URL=${DATABASE_URL}
+# Keep database access out of the image build; Railway injects the real
+# DATABASE_URL only at runtime.
+ARG DATABASE_URL="postgresql://build:build@127.0.0.1:5432/build"
+ENV DATABASE_URL=$DATABASE_URL
 
 RUN npm run build --workspace=backend
 
@@ -34,7 +34,4 @@ COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 4000
 
-# Railway injects the real DATABASE_URL and ADMIN_API_TOKEN at runtime.
-# Migrations are applied first; the idempotent seed then upserts the
-# canonical CMS sections without replacing existing JSON content.
 CMD ["sh","-c","npm run start --workspace=backend"]
