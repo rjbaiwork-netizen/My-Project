@@ -244,3 +244,16 @@ model AIAutomationRun {
   automation   AIAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
   @@index([automationId, createdAt])
 }
+
+model AdminWorkspaceSettings {
+  id                   String   @id @default(cuid())
+  key                  String   @unique @default("singleton")
+  displayName          String   @default("Administrator")
+  email                String   @default("")
+  timezone             String   @default("UTC")
+  theme                String   @default("system")
+  notificationsEnabled Boolean  @default(true)
+  maintenanceMode      Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
