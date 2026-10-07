@@ -45,6 +45,27 @@ async function pollRuns(id,expected,max=24){
   throw new Error(`Timed out waiting for ${expected}`);
 }
 
+const agents=await request("/api/ai/agents");
+const activeAgent=agents.data?.find(a=>a.status==="ACTIVE");
+if(!activeAgent)throw new Error("No ACTIVE AI agent is available for live execution test");
+const agentRun=await request(`/api/ai/agents/${activeAgent.id}/run`,{method:"POST",body:JSON.stringify({e2e:"AI_AGENT_LIVE_TEST",request:"Return a concise confirmation that the production agent execution path is working."})});
+if(agentRun.data?.id===undefined)throw new Error("Agent execution returned no run id");
+let agentResult=null;
+for(let i=0;i<24;i++){
+  const history=await request(`/api/ai/agents/${activeAgent.id}/runs`);
+  agentResult=history.data?.find(r=>r.id===agentRun.data.id);
+  if(agentResult?.status==="SUCCEEDED")break;
+  if(agentResult?.status==="FAILED")throw new Error(`Agent execution failed: ${agentResult.error||"unknown"}`);
+  await new Promise(r=>setTimeout(r,5000));
+}
+if(agentResult?.status!=="SUCCEEDED"||!agentResult.output?.text)throw new Error("Agent run did not reach SUCCEEDED with output");
+const originalStatus=activeAgent.status;
+const paused=await request(`/api/ai/agents/${activeAgent.id}`,{method:"PATCH",body:JSON.stringify({status:"PAUSED"})});
+if(paused.data?.status!=="PAUSED")throw new Error("Agent pause status update failed");
+const restored=await request(`/api/ai/agents/${activeAgent.id}`,{method:"PATCH",body:JSON.stringify({status:originalStatus})});
+if(restored.data?.status!==originalStatus)throw new Error("Agent status restore failed");
+console.log("✓ AI Agent registry → live execution → run history → status control");
+
 const health=await request("/health");
 if(health.automationEngineVersion!=="2.0")throw new Error("Automation engine v2 marker missing");
 
@@ -89,6 +110,9 @@ console.log("✓ Approval gate → approve → resume → success");
 const page=await fetch(frontend+"/aisystem/automation-builder");
 if(!page.ok)throw new Error(`Automation Builder frontend returned HTTP ${page.status}`);
 console.log("✓ Automation Builder frontend route is reachable");
+const agentPage=await fetch(frontend+"/aisystem/agent-dashboard");
+if(!agentPage.ok)throw new Error(`AI Agent dashboard returned HTTP ${agentPage.status}`);
+console.log("✓ AI Agent management frontend route is reachable");
 
 console.log("==============================================");
 console.log("✓ AUTOMATION ENGINE: v2 live");
@@ -98,5 +122,7 @@ console.log("✓ ACTION EXECUTION: PASS");
 console.log("✓ RUN HISTORY: PASS");
 console.log("✓ APPROVAL GATE: PASS");
 console.log("✓ FRONTEND BUILDER ROUTE: PASS");
+console.log("✓ AI AGENT EXECUTION: PASS");
+console.log("✓ AI AGENT MANAGEMENT: PASS");
 console.log("==============================================");
 NODE
