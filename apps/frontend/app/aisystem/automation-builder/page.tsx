@@ -62,6 +62,9 @@ export default function AutomationBuilder(){
   const [diagnosis,setDiagnosis]=useState<Diagnosis|null>(null);
   const [repairing,setRepairing]=useState(false);
   const [repairLog,setRepairLog]=useState<string[]>([]);
+  const [savedId,setSavedId]=useState("");
+  const [runs,setRuns]=useState<any[]>([]);
+  const [runBusy,setRunBusy]=useState(false);
 
   useEffect(()=>{fetch(`${api()}/api/ai/agents`,{cache:"no-store"}).then(r=>r.json()).then(d=>{const a=d.data??[];setAgents(a);if(a[0])setAgentId(a[0].id)}).catch(()=>setMessage("Unable to load agents."))},[]);
 
@@ -115,10 +118,30 @@ export default function AutomationBuilder(){
         setMessage(`Automatic repair could not resolve the server error: ${serverMessage}`);
         return;
       }
-      setMessage("Automation saved successfully. Self-healing validation passed.");
+      setSavedId(d.data?.id??"");
+      setMessage("Automation saved successfully. Ready for live execution.");
       setDiagnosis({valid:true,issues:[],fixes:repairLog,diagnosis:"Automation configuration passed validation."});
+      if(d.data?.id) await loadRuns(d.data.id);
     }catch(e){setMessage(e instanceof Error?e.message:"Unable to save automation.")}finally{setBusy(false)}
   }
+
+  async function loadRuns(id=savedId){
+    if(!id)return;
+    try{const r=await fetch(api()+"/api/ai/automations/"+id+"/runs",{cache:"no-store"});const d=await r.json();if(r.ok)setRuns(d.data??[]);}catch{}
+  }
+  async function runNow(){
+    if(!savedId)return;
+    setRunBusy(true);setMessage("");
+    try{
+      const r=await fetch(api()+"/api/ai/automations/"+savedId+"/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({input:{flag:"ready",source:"builder"}})});
+      const d=await r.json();
+      if(!r.ok){setMessage(d?.error?.message??"Unable to start run.");return;}
+      setMessage("Run queued. Monitoring execution…");
+      for(let i=0;i<18;i++){await new Promise(x=>setTimeout(x,3000));const rr=await fetch(api()+"/api/ai/automations/"+savedId+"/runs",{cache:"no-store"});const dd=await rr.json();setRuns(dd.data??[]);const latest=dd.data?.[0];if(latest?.status==="SUCCEEDED"){setMessage("✓ Automation completed successfully.");break}if(latest?.status==="FAILED"){setMessage("✗ Automation failed: "+(latest.error??"unknown error"));break}if(latest?.status==="APPROVAL_REQUIRED"){setMessage("⏸ Automation is waiting for approval.");break}}
+    }catch{setMessage("Execution request failed.")}finally{setRunBusy(false)}
+  }
+  async function retryRun(id:string){setRunBusy(true);try{const r=await fetch(api()+"/api/ai/automation-runs/"+id+"/retry",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});const d=await r.json();setMessage(r.ok?"Retry queued.":"Retry failed: "+(d?.error?.message??"unknown error"));await loadRuns();}finally{setRunBusy(false)}}
+  async function approveRun(id:string){setRunBusy(true);try{const r=await fetch(api()+"/api/ai/automation-runs/"+id+"/approve",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({approver:"builder"})});const d=await r.json();setMessage(r.ok?"Approval accepted; execution resumed.":"Approval failed: "+(d?.error?.message??"unknown error"));await loadRuns();}finally{setRunBusy(false)}}
 
   return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-4 py-8 text-white sm:px-6 lg:px-8"><div className="mx-auto max-w-5xl">
     <div><p className="text-xs font-bold uppercase tracking-[.2em] text-blue-400">AI Agent Bot & Automation</p><h1 className="mt-2 text-3xl font-bold">Automation Builder</h1><p className="mt-2 text-sm text-slate-400">Build a workflow visually: WHEN → IF → THEN → APPROVAL → SCHEDULE.</p></div>
@@ -145,6 +168,10 @@ export default function AutomationBuilder(){
       <div className="rounded-2xl border border-white/10 bg-white/[.05] p-5"><h2 className="font-bold">3. THEN</h2><div className="mt-4 space-y-3">{steps.map((s,i)=><div key={i} className="flex gap-2"><select value={s.type} onChange={e=>setSteps(steps.map((x,n)=>n===i?{...x,type:e.target.value}:x))} className="flex-1 rounded-xl border border-white/10 bg-slate-900 p-3">{actions.map(a=><option key={a}>{a}</option>)}</select><button onClick={()=>setSteps(steps.filter((_,n)=>n!==i))} disabled={steps.length===1} className="rounded-xl border border-white/10 px-3 disabled:opacity-30">×</button></div>)}<button onClick={addStep} className="rounded-lg border border-white/10 px-3 py-2 text-sm">+ Add action</button></div></div>
       <div className="rounded-2xl border border-white/10 bg-white/[.05] p-5"><h2 className="font-bold">4. APPROVAL</h2><label className="mt-4 flex items-center gap-3 text-sm"><input type="checkbox" checked={approval} onChange={e=>setApproval(e.target.checked)}/> Require approval before execution</label><p className="mt-2 text-xs text-slate-500">Approval configuration is retained in the automation payload for the execution engine.</p></div>
       <div className="rounded-2xl border border-white/10 bg-white/[.05] p-5"><h2 className="font-bold">5. SCHEDULE</h2><p className="mt-2 text-sm text-slate-400">{trigger==="schedule"?`Runs every ${schedule} seconds.`:"Schedule is controlled by the WHEN trigger."}</p></div>
+      <section className="rounded-2xl border border-white/10 bg-white/[.05] p-5">
+        <div className="flex items-center justify-between gap-3"><div><h2 className="font-bold">Live Execution & Run History</h2><p className="mt-1 text-xs text-slate-400">{savedId?"Saved automation is ready to execute.":"Save the automation first."}</p></div><div className="flex gap-2"><button onClick={()=>void loadRuns()} disabled={!savedId||runBusy} className="rounded-lg border border-white/10 px-3 py-2 text-xs">Refresh</button><button onClick={()=>void runNow()} disabled={!savedId||runBusy} className="rounded-lg bg-emerald-400 px-3 py-2 text-xs font-bold text-slate-950 disabled:opacity-40">{runBusy?"Running…":"Run Now"}</button></div></div>
+        <div className="mt-4 space-y-2">{runs.length===0?<p className="text-sm text-slate-500">No executions yet.</p>:runs.map((run:any)=><div key={run.id} className="rounded-xl border border-white/10 bg-black/20 p-3"><div className="flex items-center justify-between"><span className="font-semibold">{run.status}</span><span className="text-xs text-slate-500">{new Date(run.createdAt).toLocaleString()}</span></div>{run.error&&<p className="mt-1 text-xs text-red-300">{run.error}</p>}{Array.isArray(run.steps)&&run.steps.length>0&&<div className="mt-2 space-y-1 text-xs text-slate-400">{run.steps.map((s:any,i:number)=><div key={i}>• {s.type}: {s.status}{s.error?" — "+s.error:""}</div>)}</div>}{run.status==="APPROVAL_REQUIRED"&&<button onClick={()=>void approveRun(run.id)} className="mt-2 rounded-lg border border-amber-300/30 px-3 py-1 text-xs">Approve</button>}{run.status==="FAILED"&&<button onClick={()=>void retryRun(run.id)} className="mt-2 rounded-lg border border-blue-300/30 px-3 py-1 text-xs">Retry</button>}</div>)}</div>
+      </section>
       <div className="flex justify-end"><button onClick={()=>void save()} disabled={busy||!name.trim()||!agentId} className="rounded-xl bg-white px-5 py-3 text-sm font-bold text-slate-950 disabled:opacity-50">{busy?"Saving…":"Save Automation"}</button></div>
     </section>
   </div></main></MobileAppShell>
