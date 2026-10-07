@@ -5,6 +5,7 @@ import SectionEditModal from "../../../components/admin/SectionEditModal";
 import SectionStatusBadge from "../../../components/admin/SectionStatusBadge";
 import VisibilityToggle from "../../../components/admin/VisibilityToggle";
 import { sectionApi, type CMSSection, type SectionKey } from "../../../lib/api";
+import type { JsonValue } from "@my-project/shared";
 
 const CANONICAL_ORDER: SectionKey[] = [
   "HEADER", "HERO", "ABOUT", "SERVICES", "PORTFOLIO",
@@ -67,7 +68,7 @@ export default function AdminSystemConfigPage() {
 
   const handleSave = async (payload: {
     title: string;
-    content: Record<string, unknown> | unknown[];
+    content: JsonValue;
   }) => {
     if (!editingSection) return;
     const previous = sections;
