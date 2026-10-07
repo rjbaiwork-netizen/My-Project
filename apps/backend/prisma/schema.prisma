@@ -94,6 +94,7 @@ model AIMemory {
   content        String
   metadata       Json?
   embedding      Json?
+  embeddingProvider String? @default("openai")
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   conversation   AIConversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -121,6 +122,7 @@ model AIKnowledgeDocument {
   source     String?
   metadata   Json?
   embedding  Json?
+  embeddingProvider String? @default("openai")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   @@index([createdAt])
