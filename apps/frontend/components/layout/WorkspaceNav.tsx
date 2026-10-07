@@ -1,42 +1,41 @@
-import Link from "next/link";
+"use client";
 
-const publicLinks = [
-  ["About", "#about"],
-  ["Services", "#services"],
-  ["Portfolio", "#portfolio"],
-  ["Pricing", "#pricing"],
-  ["Blog", "#blog"],
-  ["Contact", "#contact"],
+import Link from "next/link";
+import { useState } from "react";
+
+const groups = [
+  { title: "Admin Workspace", links: [["Dashboard", "/admin/dashboard"], ["Profile", "/admin/profile"], ["Settings", "/admin/settings"], ["System Configuration", "/admin/system-config"]] },
+  { title: "Project Workspace", links: [["Dashboard", "/project/dashboard"], ["Profile", "/project/profile"], ["Settings", "/project/settings"]] },
+  { title: "AI Workspace", links: [["Chat Interface", "/ai/chat-interface"], ["AI Bot", "/ai/ai-bot"]] },
 ] as const;
 
 export default function WorkspaceNav({ theme = "light" }: { theme?: "light" | "dark" }) {
+  const [open, setOpen] = useState(false);
   const dark = theme === "dark";
-  const linkClass = dark
-    ? "text-slate-300 hover:text-white"
-    : "text-slate-600 hover:text-slate-950";
   return (
-    <nav aria-label="Workspace navigation" className="border-b border-slate-200/80 bg-inherit">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-6 py-3 sm:px-8 lg:px-10">
-        <Link href="/" className={`rounded-full px-3 py-2 text-sm font-medium ${linkClass}`}>Home</Link>
-        {publicLinks.map(([label, href]) => (
-          <Link key={href} href={`/${href}`} className={`hidden rounded-full px-3 py-2 text-sm font-medium sm:inline-flex ${linkClass}`}>{label}</Link>
-        ))}
-        <span className="mx-1 hidden h-5 w-px bg-slate-300 sm:block" aria-hidden="true" />
-        <Link href="/admin/system-config" className="rounded-full border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-500 hover:text-slate-950">Admin Control Room</Link>
-        <Link href="/project/dashboard" className="rounded-full bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700">Project Workspace</Link>
-        <Link href="/ai/chat-interface" className="rounded-full border border-slate-900 px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100">AI Workspace</Link>
-        <details className="relative ml-auto sm:hidden">
-          <summary className={`cursor-pointer list-none rounded-full border px-4 py-2 text-sm font-semibold ${dark ? "border-white/20 text-white" : "border-slate-300 text-slate-800"}`}>Menu</summary>
-          <div className={`absolute right-0 z-50 mt-2 w-64 rounded-2xl border p-2 shadow-xl ${dark ? "border-white/10 bg-slate-900" : "border-slate-200 bg-white"}`}>
-            {publicLinks.map(([label, href]) => (
-              <Link key={href} href={`/${href}`} className={`block rounded-xl px-3 py-2 text-sm ${linkClass}`}>{label}</Link>
-            ))}
-            <Link href="/admin/system-config" className={`block rounded-xl px-3 py-2 text-sm ${linkClass}`}>Admin Control Room</Link>
-            <Link href="/project/dashboard" className={`block rounded-xl px-3 py-2 text-sm ${linkClass}`}>Project Workspace</Link>
-            <Link href="/ai/chat-interface" className={`block rounded-xl px-3 py-2 text-sm ${linkClass}`}>AI Workspace</Link>
-          </div>
-        </details>
+    <nav aria-label="Workspace navigation" className={dark ? "border-b border-white/10 bg-slate-950" : "border-b border-slate-200 bg-white"}>
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <Link href="/" className={dark ? "text-sm font-semibold text-white" : "text-sm font-semibold text-slate-950"}>My Project</Link>
+        <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} className={dark ? "rounded-lg border border-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10" : "rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"}>
+          {open ? "Close Menu" : "Workspace Menu"}
+        </button>
       </div>
+      {open && (
+        <div className={dark ? "border-t border-white/10 bg-slate-950" : "border-t border-slate-100 bg-white"}>
+          <div className="mx-auto grid max-w-7xl gap-4 px-4 py-4 sm:grid-cols-3 sm:px-6 lg:px-8">
+            {groups.map((group) => (
+              <section key={group.title}>
+                <h2 className={dark ? "px-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500" : "px-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-400"}>{group.title}</h2>
+                <div className="mt-1 grid gap-1">
+                  {group.links.map(([label, href]) => (
+                    <Link key={href} href={href} onClick={() => setOpen(false)} className={dark ? "rounded-lg px-2 py-2 text-sm text-slate-300 hover:bg-white/10 hover:text-white" : "rounded-lg px-2 py-2 text-sm text-slate-600 hover:bg-slate-100 hover:text-slate-950"}>{label}</Link>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
