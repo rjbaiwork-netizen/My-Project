@@ -1,11 +1,14 @@
 import { Router } from "express";
 import { deleteSection,getAdminSections,getPublicSections,toggleSectionVisibility,updateSection } from "../controllers/adminSectionController.js";
+import { getWorkspaceSettings, updateWorkspaceSettings } from "../controllers/adminWorkspaceController.js";
 import { requireAdminAuth } from "../middleware/adminAuth.js";
 const router=Router();
 router.get("/sections",getPublicSections);
-router.use("/admin/sections",requireAdminAuth);
+router.use("/admin",requireAdminAuth);
 router.get("/admin/sections",getAdminSections);
 router.patch("/admin/sections/:id",updateSection);
 router.patch("/admin/sections/:id/visibility",toggleSectionVisibility);
 router.delete("/admin/sections/:id",deleteSection);
+router.get("/admin/workspace",getWorkspaceSettings);
+router.patch("/admin/workspace",updateWorkspaceSettings);
 export default router;
