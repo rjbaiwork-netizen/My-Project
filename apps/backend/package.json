@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "prisma generate && tsx watch src/server.ts",
-    "build": "prisma generate && tsc",
+    "build": "prisma generate && npm run build --workspace=@my-project/shared && tsc",
     "start": "tsx src/server.ts",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
@@ -20,7 +20,8 @@
     "cors": "2.8.5",
     "dotenv": "^17.2.2",
     "express": "5.1.0",
-    "pg": "8.23.0"
+    "pg": "8.23.0",
+    "@my-project/shared": "1.0.0"
   },
   "devDependencies": {
     "@types/cors": "2.8.19",
