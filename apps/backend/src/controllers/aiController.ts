@@ -12,7 +12,7 @@ export async function chat(req:Request,res:Response){
     await prisma.aIMessage.create({data:{conversationId:conversation.id,role:"user",content:message}});
     await prisma.aIConversation.update({where:{id:conversation.id},data:{updatedAt:new Date()}});
     const history=await prisma.aIMessage.findMany({where:{conversationId:conversation.id},orderBy:{createdAt:"asc"},take:30});
-    const [knowledge,memories]=await Promise.all([retrieveKnowledge(message,5,"production").catch(()=>[]),retrieveMemories(message,5,"production").catch(()=>[])]);
+    const [knowledge,memories]=await Promise.all([retrieveKnowledge(message,5,"knowledge").catch(()=>[]),retrieveMemories(message,5,"knowledge").catch(()=>[])]);
     const context=[...knowledge.map(k=>`Knowledge: ${k.title}\n${k.content}`),...memories.map(m=>`Memory: ${m.content}`)].join("\n\n");
     const answer=await generateAI([{role:"system",content:"You are the My-Project AI Assistant. Use verified project context. Never claim an external action was executed without a tool result."},...history.filter(m=>m.role==="user"||m.role==="assistant").map(m=>({role:m.role as "user"|"assistant",content:m.content})),{role:"user",content:context?`Relevant project context:\n${context}\n\nCurrent request:\n${message}`:message}],"production");
     const requestedAgentId=typeof req.body?.agentId==="string"?req.body.agentId:undefined;
