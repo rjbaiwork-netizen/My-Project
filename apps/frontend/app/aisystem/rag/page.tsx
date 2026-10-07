@@ -1,22 +1,5 @@
 "use client";
 import MobileAppShell from "../../../../components/layout/MobileAppShell";
-
-export default function Page() {
-  return (
-    <MobileAppShell theme="dark">
-      <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
-        <div className="mx-auto max-w-5xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">My Project / AI System</p>
-          <div className="mt-3 flex items-start gap-4">
-            <span className="text-3xl" aria-hidden="true">🔎</span>
-            <div><h1 className="text-3xl font-bold tracking-tight">RAG / Vector Search</h1><p className="mt-3 max-w-3xl text-slate-400">Retrieval-Augmented Generation এবং vector-based knowledge retrieval-এর workspace।</p></div>
-          </div>
-          <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
-            <p className="text-sm font-semibold text-slate-200">AI System Workspace</p>
-            <p className="mt-2 text-sm text-slate-400">This page is the dedicated foundation for this AI System capability. Execution engines and production integrations can be connected in the next implementation phase.</p>
-          </div>
-        </div>
-      </main>
-    </MobileAppShell>
-  );
-}
+import {useState} from "react";
+const api=()=>((process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,""));
+export default function Page(){const [q,setQ]=useState("project knowledge"),[results,setResults]=useState<any[]>([]),[busy,setBusy]=useState(false);async function search(){setBusy(true);try{const r=await fetch(api()+"/api/ai/knowledge/search?q="+encodeURIComponent(q));const d=await r.json();setResults(d.data??[])}finally{setBusy(false)}}return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-6 py-10 text-white"><div className="mx-auto max-w-5xl"><p className="text-xs font-bold uppercase tracking-[.2em] text-blue-400">My Project / AI System</p><h1 className="mt-2 text-3xl font-bold">RAG / Semantic Search</h1><p className="mt-3 text-slate-400">Knowledge retrieval-এর বাস্তব semantic search পরীক্ষা করুন।</p><div className="mt-7 flex gap-2"><input value={q} onChange={e=>setQ(e.target.value)} className="min-w-0 flex-1 rounded-xl bg-white/5 p-3 ring-1 ring-white/10"/><button onClick={()=>void search()} disabled={busy} className="rounded-xl bg-white px-4 text-sm font-semibold text-slate-950">{busy?"…":"Search"}</button></div><div className="mt-6 space-y-3">{results.map(x=><article key={x.id} className="rounded-2xl border border-white/10 bg-white/5 p-5"><h2 className="font-semibold">{x.title}</h2><p className="mt-2 text-sm text-slate-400">{x.content}</p></article>)}</div></div></main></MobileAppShell>}
