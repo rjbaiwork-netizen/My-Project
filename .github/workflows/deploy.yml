@@ -46,6 +46,10 @@ jobs:
         env:
           DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
         run: npm run build:backend
+
+      - name: Verify deployment sources
+        shell: bash
+        run: |
           echo "✓ Railway source: rjbaiwork-netizen/My-Project"
           echo "✓ Render source: rjbaiwork-netizen/My-Project"
 
