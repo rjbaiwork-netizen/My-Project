@@ -1,8 +1,10 @@
 import { Router } from "express";
-import { addKnowledge, chat, createJob, listAgents, listJobs, listKnowledge } from "../controllers/aiController.js";
+import { addKnowledge, chat, createJob, listAgents, listJobs, listKnowledge, orchestrate, runAgentRoute } from "../controllers/aiController.js";
 const router=Router();
 router.post("/chat",chat);
 router.get("/agents",listAgents);
+router.post("/agents/:id/run",runAgentRoute);
+router.post("/orchestrate",orchestrate);
 router.get("/knowledge",listKnowledge);
 router.post("/knowledge",addKnowledge);
 router.get("/jobs",listJobs);
