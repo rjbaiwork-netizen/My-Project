@@ -9,7 +9,7 @@ const publicLinks = [["Home","#hero"],["About","#about"],["Services","#services"
 const groups = [
   { title:"Admin Workspace", links:[["Dashboard","/admin/dashboard"],["Profile","/admin/profile"],["Settings","/admin/settings"],["System Configuration","/admin/system-config"]] },
   { title:"Project Workspace", links:[["Dashboard","/project/dashboard"],["Profile","/project/profile"],["Settings","/project/settings"]] },
-  { title:"AI Workspace", links:[["Chat Interface","/ai/chat-interface"],["AI Bot","/ai/ai-bot"]] },
+  { title:"AI System", links:[["Chat Interface","/aisystem/chat-interface"],["AI Agent Dashboard","/aisystem/agent-dashboard"],["Knowledge Base","/aisystem/knowledge-base"],["Automation","/aisystem/automation"],["Orchestrator","/aisystem/orchestrator"]] },
 ] as const;
 
 function Icon({name}:{name:"menu"|"close"|"home"|"back"|"chevron"}) {
