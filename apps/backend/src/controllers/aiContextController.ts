@@ -37,7 +37,7 @@ export async function updateKnowledge(req:Request,res:Response){
     const doc=await prisma.aIKnowledgeDocument.update({where:{id},data:{
       ...(title!==undefined?{title:title.trim()}:{}),...(content!==undefined?{content:content.trim()}:{}),
       ...(source!==undefined?{source:typeof source==="string"&&source.trim()?source.trim():null}:{}),
-      ...(metadata!==undefined?{metadata}:{}),...(changedContent?{embedding:null}:{})
+      ...(metadata!==undefined?{metadata}:{}),...(changedContent?{embedding:Prisma.JsonNull}:{})
     }});
     if(changedContent) await indexKnowledge(doc.id);
     const refreshed=await prisma.aIKnowledgeDocument.findUnique({where:{id:doc.id}});
@@ -64,7 +64,7 @@ export async function updateMemory(req:Request,res:Response){
     let memory=await prisma.aIMemory.update({where:{id},data:{
       ...(content!==undefined?{content:content.trim()}:{}),
       ...(namespace!==undefined?{namespace:typeof namespace==="string"&&namespace.trim()?namespace.trim():"default"}:{}),
-      ...(metadata!==undefined?{metadata}:{}),...(changedContent?{embedding:null}:{})
+      ...(metadata!==undefined?{metadata}:{}),...(changedContent?{embedding:Prisma.JsonNull}:{})
     }});
     if(changedContent){
       const embedding=await embedText(memory.content);
