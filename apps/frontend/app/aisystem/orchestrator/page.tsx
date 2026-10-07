@@ -1,20 +1,8 @@
 "use client";
 import MobileAppShell from "../../../../components/layout/MobileAppShell";
-
-export default function Page() {
-  return (
-    <MobileAppShell theme="dark">
-      <main className="px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-xs font-bold uppercase tracking-[.18em] text-blue-400">AI System</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Multi-Agent System</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">একাধিক AI Agent একসাথে কাজ করে জটিল কাজ ভাগ করে সম্পন্ন করার জন্য এই workspace।</p>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {[["AI Assistant","General questions and conversations"],["Knowledge Agent","Finds useful information from your knowledge"],["Automation Agent","Handles scheduled and automated tasks"]].map(([title,desc])=><article key={title} className="rounded-2xl border border-white/10 bg-white/[.05] p-5"><div className="flex items-center justify-between"><h2 className="font-bold">{title}</h2><span className="h-2.5 w-2.5 rounded-full bg-emerald-400"/></div><p className="mt-2 text-sm leading-6 text-slate-400">{desc}</p><button className="mt-5 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/10">View agent</button></article>)}
-          </div>
-          <section className="mt-6 rounded-2xl border border-white/10 bg-white/[.04] p-6"><h2 className="text-lg font-bold">How it works</h2><div className="mt-5 grid gap-3 md:grid-cols-3">{["Understand the request","Choose the right AI Agent","Complete and report the result"].map((x,i)=><div key={x} className="rounded-xl border border-white/10 p-4"><span className="text-xs font-bold text-blue-400">0{i+1}</span><p className="mt-2 text-sm text-slate-300">{x}</p></div>)}</div></section>
-        </div>
-      </main>
-    </MobileAppShell>
-  );
-}
+import {useEffect,useState} from "react";
+const api=()=>((process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,""));
+export default function Page(){const [agents,setAgents]=useState<any[]>([]);const [selected,setSelected]=useState<string[]>([]);const [input,setInput]=useState("Complete this task using the selected agents.");const [result,setResult]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");useEffect(()=>{fetch(api()+"/api/ai/agents").then(r=>r.json()).then(d=>setAgents(d.data??[])).catch(e=>setError(e.message))},[]);
+function toggle(id:string){setSelected(s=>s.includes(id)?s.filter(x=>x!==id):s.length<6?[...s,id]:s)}
+async function run(){setBusy(true);setError("");try{const r=await fetch(api()+"/api/ai/agent-chain/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({agentIds:selected,input})});const d=await r.json();if(!r.ok)throw Error(d?.error?.message??"Agent chain failed.");setResult(JSON.stringify(d.data?.output??d.data,null,2))}catch(e){setError(e instanceof Error?e.message:"Chain failed")}finally{setBusy(false)}}
+return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-4 py-8 text-white"><div className="mx-auto max-w-5xl"><p className="text-xs font-bold uppercase tracking-[.2em] text-blue-400">AI System / Orchestration</p><h1 className="mt-2 text-3xl font-bold">Multi-Agent System</h1><p className="mt-3 text-slate-400">Select at least two agents; each receives the previous agent's output.</p><div className="mt-6 grid gap-3">{agents.map(a=><button key={a.id} onClick={()=>toggle(a.id)} className={`rounded-xl border p-4 text-left ${selected.includes(a.id)?"border-blue-400 bg-blue-400/10":"border-white/10 bg-white/5"}`}><b>{a.name}</b><span className="ml-2 text-xs text-slate-500">{a.status}</span><p className="mt-1 text-xs text-slate-400">{a.description}</p></button>)}</div><textarea value={input} onChange={e=>setInput(e.target.value)} className="mt-5 min-h-28 w-full rounded-xl bg-white/5 p-4 ring-1 ring-white/10"/><button onClick={()=>void run()} disabled={busy||selected.length<2} className="mt-3 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-950">{busy?"Running…":"Run Agent Chain"}</button>{error&&<p className="mt-4 text-sm text-red-300">{error}</p>}{result&&<pre className="mt-6 overflow-auto rounded-2xl bg-black/30 p-5 text-xs leading-6 text-slate-200">{result}</pre>}</div></main></MobileAppShell>}
