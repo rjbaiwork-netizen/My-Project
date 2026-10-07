@@ -180,7 +180,6 @@ export async function startAIWorker(intervalMs=15000){
       console.error("[automation-worker]",lastError);
     }finally{running=false;}
   };
-  };
   workerStarted=true;
   void tick();
   return setInterval(()=>void tick(),intervalMs);
