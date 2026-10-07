@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
-import { generateAI, retrieveKnowledge, retrieveMemories, embedText, indexKnowledge } from "../lib/ai.js";
+import { generateAI, retrieveKnowledge, retrieveMemories, embedText, indexKnowledge, reindexKnowledge } from "../lib/ai.js";
 import { runAgent, runOrchestrator } from "../lib/agentOrchestrator.js";
 export async function chat(req:Request,res:Response){
   const message=typeof req.body?.message==="string"?req.body.message.trim():"";
@@ -180,3 +180,4 @@ export async function controlCenter(req:Request,res:Response){
     res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load AI control center."}});
   }
 }
+\nexport async function reindexKnowledgeRoute(_req:Request,res:Response){try{res.json({success:true,data:await reindexKnowledge()});}catch(error){res.status(503).json({success:false,error:{message:error instanceof Error?error.message:"Knowledge reindex failed."}});}}\n
