@@ -1,4 +1,5 @@
 import { prisma } from "./prisma.js";
+import { Prisma } from "../../generated/prisma/client.js";
 type ChatMessage={role:"system"|"user"|"assistant";content:string};
 const provider=process.env.AI_PROVIDER??"openai";
 const model=process.env.AI_MODEL??"gpt-6-luna";
@@ -9,5 +10,5 @@ export async function generateAI(messages:ChatMessage[]){if(provider!=="openai")
 export async function embedText(input:string){const data=await openAI("embeddings",{model:embeddingModel,input});const vector=data.data?.[0]?.embedding;if(!Array.isArray(vector))throw new Error("Embedding response did not contain a vector.");return vector as number[];}
 function cosine(a:number[],b:number[]){let dot=0,aa=0,bb=0;const n=Math.min(a.length,b.length);for(let i=0;i<n;i++){dot+=a[i]*b[i];aa+=a[i]*a[i];bb+=b[i]*b[i];}return aa&&bb?dot/(Math.sqrt(aa)*Math.sqrt(bb)):0;}
 export async function indexKnowledge(id:string){const doc=await prisma.aIKnowledgeDocument.findUnique({where:{id}});if(!doc)return;const embedding=await embedText(doc.content);await prisma.aIKnowledgeDocument.update({where:{id},data:{embedding}});}
-export async function retrieveKnowledge(query:string,limit=5){const queryVector=await embedText(query);const docs=await prisma.aIKnowledgeDocument.findMany({where:{embedding:{not:null}},take:500});return docs.map(d=>({d,score:cosine(queryVector,Array.isArray(d.embedding)?d.embedding as number[]:[])})).sort((a,b)=>b.score-a.score).slice(0,limit).filter(x=>x.score>0).map(x=>x.d);}
+export async function retrieveKnowledge(query:string,limit=5){const queryVector=await embedText(query);const docs=await prisma.aIKnowledgeDocument.findMany({where:{embedding:{not:Prisma.JsonNull}},take:500});return docs.map(d=>({d,score:cosine(queryVector,Array.isArray(d.embedding)?d.embedding as number[]:[])})).sort((a,b)=>b.score-a.score).slice(0,limit).filter(x=>x.score>0).map(x=>x.d);}
 export async function retrieveMemories(query:string,limit=5){const queryVector=await embedText(query);const memories=await prisma.aIMemory.findMany({where:{embedding:{not:null}},take:500});return memories.map(m=>({m,score:cosine(queryVector,Array.isArray(m.embedding)?m.embedding as number[]:[])})).sort((a,b)=>b.score-a.score).slice(0,limit).filter(x=>x.score>0).map(x=>x.m);}
