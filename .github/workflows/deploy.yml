@@ -55,3 +55,9 @@ jobs:
           BACKEND_URL: https://my-project-production-9cd9.up.railway.app
           FRONTEND_URL: https://my-project-mk2x.onrender.com
         run: bash scripts/automation-e2e.sh
+
+      - name: AI Agent live E2E
+        shell: bash
+        env:
+          BACKEND_URL: https://my-project-production-9cd9.up.railway.app
+        run: bash scripts/agent-e2e.sh
