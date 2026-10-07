@@ -20,3 +20,5 @@ app.listen(port,"0.0.0.0",()=>{console.log(`Backend API listening on 0.0.0.0:${p
 export default app;
 
 // Automation deployment recovery marker.
+
+// Migration recovery path uses the backend working directory.
