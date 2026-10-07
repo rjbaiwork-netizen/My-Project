@@ -15,7 +15,8 @@ export default function Page(){
   const [selected,setSelected]=useState("");
   const [name,setName]=useState("");
   const [description,setDescription]=useState("");
-  const [busy,setBusy]=useState(false);\n  const [runningId,setRunningId]=useState("");
+  const [busy,setBusy]=useState(false);
+  const [runningId,setRunningId]=useState("");
   const [error,setError]=useState("");
 
   async function load(){
@@ -42,7 +43,12 @@ export default function Page(){
     }catch(e){setError(e instanceof Error?e.message:"Request failed");}finally{setBusy(false);}
   }
 
-  async function runAutomation(id:string){\n    setRunningId(id); setError("");\n    try{const r=await fetch(`${api()}/api/ai/automations/${id}/run`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({input:{source:"agent-automation-workspace"}})});const d=await r.json();if(!r.ok)throw Error(d?.error?.message??"Unable to queue automation.");await load();}catch(e){setError(e instanceof Error?e.message:"Unable to run automation.");}finally{setRunningId("");}\n  }\n\n  return <MobileAppShell theme="dark">
+  async function runAutomation(id:string){
+    setRunningId(id); setError("");
+    try{const r=await fetch(`${api()}/api/ai/automations/${id}/run`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({input:{source:"agent-automation-workspace"}})});const d=await r.json();if(!r.ok)throw Error(d?.error?.message??"Unable to queue automation.");await load();}catch(e){setError(e instanceof Error?e.message:"Unable to run automation.");}finally{setRunningId("");}
+  }
+
+  return <MobileAppShell theme="dark">
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
