@@ -11,7 +11,7 @@ const groups = [
   {title:"AI System",items:[
     ["/aisystem/chat-interface","AI Chat"],["/aisystem/website-assistant","Website Assistant"],
     ["/aisystem/knowledge-base","Knowledge Base"],["/aisystem/memory","AI Memory"],
-    ["/aisystem/agent-dashboard","AI Agents"],["/aisystem/automation","Automation"],
+    ["/aisystem/agent-automation","Agent Bot & Automation"],["/aisystem/agent-dashboard","AI Agents"],["/aisystem/automation","Automation"],
     ["/aisystem/jobs","Tasks"],["/aisystem/approvals","Approvals"],["/aisystem/monitoring","Monitoring"]
   ]}
 ];
