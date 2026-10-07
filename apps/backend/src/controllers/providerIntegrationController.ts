@@ -19,8 +19,19 @@ export async function beginIntegration(req:Request,res:Response){
   const url=new URL(spec.authUrl!);url.searchParams.set("client_id",clientId);url.searchParams.set("redirect_uri",redirectUri);url.searchParams.set("response_type","code");url.searchParams.set("scope","https://www.googleapis.com/auth/cloud-platform");url.searchParams.set("access_type","offline");url.searchParams.set("prompt","consent");url.searchParams.set("state",state);
   return void res.json({success:true,data:{mode:"oauth",authorizationUrl:url.toString(),state,providerId}});
  }
- if(spec.mode==="api-key-management" && !process.env.OPENROUTER_MANAGEMENT_KEY)
-  return void res.json({success:true,data:{mode:"bootstrap-required",providerId,requiredSecret:"OPENROUTER_MANAGEMENT_KEY",message:"A provider management credential must be bootstrapped once; this is not the workload API key."}});
+ if(spec.mode==="api-key-management"){
+  const managementKey=process.env.OPENROUTER_MANAGEMENT_KEY;
+  if(!managementKey)return void res.json({success:true,data:{mode:"bootstrap-required",providerId,requiredSecret:"OPENROUTER_MANAGEMENT_KEY",message:"A provider management credential must be bootstrapped once; this is not the workload API key."}});
+  try{
+    const response=await fetch("https://openrouter.ai/api/v1/keys",{method:"POST",headers:{"Authorization":`Bearer ${managementKey}`,"Content-Type":"application/json"},body:JSON.stringify({name:"My-Project Production AI",limit:0,limit_reset:"monthly"})});
+    const body=await response.text();if(!response.ok)throw new Error(`OpenRouter key provisioning failed: ${response.status}`);
+    const data=JSON.parse(body);const key=data.key;if(typeof key!=="string")throw new Error("OpenRouter did not return a workload API key.");
+    await syncSecret(spec.secretKeys[0],key,"railway");
+    await prisma.aIProviderConnection.upsert({where:{providerId},update:{displayName:spec.name,status:"CONNECTED",authType:"api-key-management",secretTargets:[{target:"railway",key:spec.secretKeys[0]}],externalRef:data.data?.hash??null,lastError:null,connectedAt:new Date(),lastValidatedAt:new Date(),capabilities:spec.capabilities},create:{providerId,displayName:spec.name,authType:"api-key-management",status:"CONNECTED",secretTargets:[{target:"railway",key:spec.secretKeys[0]}],externalRef:data.data?.hash??null,connectedAt:new Date(),lastValidatedAt:new Date(),capabilities:spec.capabilities}});
+    await prisma.aIProviderEvent.create({data:{provider:providerId,purpose:"production",operation:"credential-provision",success:true,latencyMs:0}});
+    return void res.json({success:true,data:{providerId,status:"CONNECTED",mode:"api-key-management",target:"railway"}});
+  }catch(error){return void res.status(503).json({success:false,error:{message:error instanceof Error?error.message:"Provider key provisioning failed."}});}
+}
  res.json({success:true,data:{mode:spec.mode,providerId,docsUrl:spec.docsUrl,automatedKeyCreation:spec.automatedKeyCreation}});
 }
 export async function storeProviderSecret(req:Request,res:Response){
