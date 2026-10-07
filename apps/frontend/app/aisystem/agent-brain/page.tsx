@@ -1,0 +1,18 @@
+"use client";
+import MobileAppShell from "../../../../components/layout/MobileAppShell";
+import {useEffect,useState} from "react";
+type Cat={id:string;name:string;key:string;progress:number;dataCount:number;memoryCount:number;knowledgeCount:number;metrics:{metricDate:string;progress:number}[]};
+type Agent={id:string;name:string;status:string};
+export default function AgentBrain(){
+ const [agents,setAgents]=useState<Agent[]>([]);const [id,setId]=useState("");const [data,setData]=useState<{agent:Agent;overall:number;categories:Cat[]}>();
+ const [error,setError]=useState("");
+ const base=(process.env.NEXT_PUBLIC_API_URL??"").replace(//$/,"");
+ useEffect(()=>{fetch(base+"/api/ai/agents").then(r=>r.json()).then(d=>{setAgents(d.data??[]);if(d.data?.[0])setId(d.data[0].id)}).catch(e=>setError(e.message));},[]);
+ useEffect(()=>{if(!id)return;fetch(base+"/api/ai/agents/"+id+"/brain",{cache:"no-store"}).then(r=>r.json()).then(d=>{if(!d.success)throw Error(d?.error?.message);setData(d.data)}).catch(e=>setError(e.message));},[id]);
+ return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-4 py-8 text-white sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl">
+ <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-blue-400">AI Agent Brain</p><h1 className="mt-2 text-3xl font-bold">Brain Profile</h1><p className="mt-2 text-sm text-slate-400">Category অনুযায়ী knowledge, memory এবং data growth-এর live profile.</p></div><select value={id} onChange={e=>setId(e.target.value)} className="rounded-xl border border-white/10 bg-slate-900 px-4 py-3 text-sm">{agents.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></div>
+ {error&&<div className="mt-6 rounded-xl bg-red-400/10 p-4 text-sm text-red-200">{error}</div>}
+ {data&&<><section className="mt-7 rounded-2xl border border-white/10 bg-white/[.05] p-6"><div className="flex items-end justify-between"><div><h2 className="text-xl font-bold">{data.agent.name}</h2><p className="mt-1 text-xs uppercase tracking-wider text-slate-500">{data.agent.status}</p></div><strong className="text-4xl">{data.overall}%</strong></div><div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-blue-400" style={{width:data.overall+"%"}}/></div></section>
+ <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{data.categories.map(c=><article key={c.id} className="rounded-2xl border border-white/10 bg-white/[.05] p-5"><div className="flex items-center justify-between"><h3 className="font-bold">{c.name}</h3><span className="text-sm font-semibold text-blue-300">{c.progress}%</span></div><div className="mt-3 h-2 rounded-full bg-white/10"><div className="h-full rounded-full bg-emerald-400" style={{width:c.progress+"%"}}/></div><div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs"><div className="rounded-lg bg-white/5 p-2"><b className="block text-base">{c.knowledgeCount}</b>Knowledge</div><div className="rounded-lg bg-white/5 p-2"><b className="block text-base">{c.memoryCount}</b>Memory</div><div className="rounded-lg bg-white/5 p-2"><b className="block text-base">{c.dataCount}</b>Data</div></div><div className="mt-4 flex h-12 items-end gap-1">{c.metrics.slice(-24).map((m,i)=><span key={i} className="flex-1 rounded-t bg-blue-400/60" style={{height:Math.max(8,m.progress)+"%"}} title={new Date(m.metricDate).toLocaleString()}/>)}</div></article>)}</section></>}
+ </div></main></MobileAppShell>;
+}
