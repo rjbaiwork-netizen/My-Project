@@ -8,7 +8,8 @@ const triggers=["manual","schedule","new-content","content-updated","new-task","
 const actions=["run-agent","create-task","generate-content","update-content","search-knowledge","store-memory","request-approval","send-notification","run-agent-chain","start-automation","stop-automation"];
 
 type Agent={id:string;name:string};
-type Row={type:string;[key:string]:unknown};
+type Condition={field:string;operator:string;value:string};
+type Action={type:string;[key:string]:unknown};
 
 export default function AutomationBuilder(){
   const [agents,setAgents]=useState<Agent[]>([]);
@@ -20,8 +21,8 @@ export default function AutomationBuilder(){
   const [conditionField,setConditionField]=useState("");
   const [conditionOperator,setConditionOperator]=useState("equals");
   const [conditionValue,setConditionValue]=useState("");
-  const [conditions,setConditions]=useState<Row[]>([]);
-  const [steps,setSteps]=useState<Row[]>([{type:"run-agent"}]);
+  const [conditions,setConditions]=useState<Condition[]>([]);
+  const [steps,setSteps]=useState<Action[]>([{type:"run-agent"}]);
   const [approval,setApproval]=useState(false);
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState("");
