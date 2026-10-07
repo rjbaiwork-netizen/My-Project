@@ -176,3 +176,5 @@ export async function startAIWorker(intervalMs=15000){
   void tick();
   return setInterval(()=>void tick(),intervalMs);
 }
+
+// Automation engine live validation marker.
