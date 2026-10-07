@@ -35,6 +35,14 @@ if ! railway whoami >/tmp/railway-whoami.txt 2>/tmp/railway-auth-error.txt; then
 fi
 echo "✓ Railway authentication accepted"
 
+echo "==> Checking Railway project/service access with active token"
+if ! railway variable list "${railway_args[@]}" --kv >/tmp/railway-project-access.txt 2>/tmp/railway-project-access-error.txt; then
+  echo "ERROR: Railway token authenticated, but My-Project access check failed." >&2
+  cat /tmp/railway-project-access-error.txt >&2
+  exit 1
+fi
+echo "✓ Railway token has access to My-Project service"
+
 echo "==> Reading Railway ADMIN_API_TOKEN"
 TOKEN="$(railway variable list "${railway_args[@]}" --kv 2>/dev/null | sed -n 's/^ADMIN_API_TOKEN=//p' | head -n1 || true)"
 
