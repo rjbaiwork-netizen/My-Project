@@ -5,7 +5,6 @@ import adminRoutes from "./routes/adminRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import providerIntegrationRoutes from "./routes/providerIntegrationRoutes.js";
 import { getAIWorkerStatus,startAIWorker } from "./workers/aiWorker.js";
-import { generateAI } from "./lib/providerRouter.js";
 import { prisma } from "./lib/prisma.js";
 const app=express(),port=Number(process.env.PORT??4000);
 if(!Number.isInteger(port)||port<=0||port>65535)throw new Error("PORT must be a valid TCP port.");
@@ -21,7 +20,7 @@ app.use("/api/ai/provider-integrations",providerIntegrationRoutes);
 app.use((_req,res)=>res.status(404).json({success:false,error:{message:"Route not found."}}));
 const errorHandler:ErrorRequestHandler=(error,_req,res,_next)=>{console.error(error);if(error instanceof SyntaxError&&"body" in error)return void res.status(400).json({success:false,error:{message:"Invalid JSON payload."}});res.status(500).json({success:false,error:{message:"Internal server error."}});};
 app.use(errorHandler);
-app.listen(port,"0.0.0.0",()=>{console.log(`Backend API listening on 0.0.0.0:${port}`);startAIWorker();if(process.env.AI_FAILOVER_SMOKE_TEST==="true"){void generateAI([{role:"system",content:"You are a production failover smoke-test assistant."},{role:"user",content:"Reply with exactly: FAILOVER_SMOKE_OK"}],"production").then(async answer=>{const events=await prisma.aIProviderEvent.findMany({orderBy:{createdAt:"desc"},take:5,select:{provider:true,purpose:true,operation:true,success:true,statusCode:true,fallbackFrom:true,latencyMs:true}});console.log(`[AI_FAILOVER_SMOKE] success response=${JSON.stringify(answer.slice(0,80))}`);console.log(`[AI_FAILOVER_SMOKE] events=${JSON.stringify(events)}`);}).catch(error=>console.error(`[AI_FAILOVER_SMOKE] failed ${error instanceof Error?error.message:String(error)}`));}});
+app.listen(port,"0.0.0.0",()=>{console.log(`Backend API listening on 0.0.0.0:${port}`);startAIWorker();});
 export default app;
 
 // Automation deployment recovery marker.
