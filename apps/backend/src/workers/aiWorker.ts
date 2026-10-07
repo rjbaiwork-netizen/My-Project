@@ -3,6 +3,9 @@ import { generateAI, retrieveKnowledge } from "../lib/ai.js";
 import { runAgent } from "../lib/agentOrchestrator.js";
 
 let running=false;
+let workerStarted=false;
+let lastTickAt:Date|null=null;
+let lastError:string|null=null;
 
 type JsonRecord=Record<string,unknown>;
 
@@ -147,6 +150,7 @@ export async function startAIWorker(intervalMs=15000){
   const tick=async()=>{
     if(running)return;
     running=true;
+    lastTickAt=new Date();
     try{
       const automationRun=await prisma.aIAutomationRun.findFirst({where:{status:"QUEUED"},orderBy:{createdAt:"asc"}});
       if(automationRun)await executeAutomationRun(automationRun.id);
@@ -171,10 +175,19 @@ export async function startAIWorker(intervalMs=15000){
           if(!last||Date.now()-last.createdAt.getTime()>=intervalSeconds*1000)await prisma.aIAutomationRun.create({data:{automationId:automation.id,status:"QUEUED",input:{trigger:"schedule"}}});
         }
       }
+    }catch(error){
+      lastError=error instanceof Error?error.message:"Automation worker tick failed.";
+      console.error("[automation-worker]",lastError);
     }finally{running=false;}
   };
+  };
+  workerStarted=true;
   void tick();
   return setInterval(()=>void tick(),intervalMs);
+}
+
+export function getAIWorkerStatus(){
+  return {started:workerStarted,running,lastTickAt:lastTickAt?.toISOString()??null,lastError};
 }
 
 // Automation engine live validation marker.
