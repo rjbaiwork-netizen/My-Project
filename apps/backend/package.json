@@ -6,13 +6,14 @@
   "scripts": {
     "dev": "prisma generate && tsx watch src/server.ts",
     "build": "prisma generate && npm run build --workspace=@my-project/shared && tsc",
-    "start": "npm run db:migrate:deploy && npm run db:seed && tsx src/server.ts",
+    "start": "npm run db:migrate:recover && npm run db:seed && tsx src/server.ts",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:migrate:recover": "prisma migrate resolve --applied 20261007120000_add_ai_system || true && prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
