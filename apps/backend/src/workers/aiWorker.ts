@@ -59,7 +59,7 @@ async function executeAction(action:JsonRecord,output:unknown,automationId:strin
   }
   if(type==="create-task"){
     const agentId=typeof action.agentId==="string"?action.agentId:undefined;
-    const job=await prisma.aIJob.create({data:{type:typeof action.taskType==="string"?action.taskType:"automation-task",payload:{input:output,automationId,runId},agentId:agentId||undefined,status:"QUEUED",scheduledAt:new Date()}});
+    const job=await prisma.aIJob.create({data:{type:typeof action.taskType==="string"?action.taskType:"automation-task",payload:{input:output as any,automationId,runId},agentId:agentId||undefined,status:"QUEUED",scheduledAt:new Date()}});
     return {taskId:job.id,value:output};
   }
   if(type==="generate-content"){
