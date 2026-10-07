@@ -257,3 +257,21 @@ model AdminWorkspaceSettings {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }
+
+
+model AIProviderEvent {
+  id           String   @id @default(cuid())
+  provider     String
+  purpose      String
+  operation    String
+  success      Boolean
+  statusCode   Int?
+  model        String?
+  error        String?
+  fallbackFrom String?
+  latencyMs    Int
+  createdAt    DateTime @default(now())
+  @@index([provider,createdAt])
+  @@index([success,createdAt])
+  @@index([purpose,createdAt])
+}
