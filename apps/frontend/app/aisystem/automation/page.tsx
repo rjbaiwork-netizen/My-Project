@@ -1,22 +1,9 @@
 "use client";
 import MobileAppShell from "../../../../components/layout/MobileAppShell";
-
-export default function Page() {
-  return (
-    <MobileAppShell theme="dark">
-      <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
-        <div className="mx-auto max-w-5xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">My Project / AI System</p>
-          <div className="mt-3 flex items-start gap-4">
-            <span className="text-3xl" aria-hidden="true">⚙️</span>
-            <div><h1 className="text-3xl font-bold tracking-tight">Automation Agent</h1><p className="mt-3 max-w-3xl text-slate-400">Event-driven এবং workflow-based AI automation-এর dedicated workspace।</p></div>
-          </div>
-          <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
-            <p className="text-sm font-semibold text-slate-200">AI System Workspace</p>
-            <p className="mt-2 text-sm text-slate-400">This page is the dedicated foundation for this AI System capability. Execution engines and production integrations can be connected in the next implementation phase.</p>
-          </div>
-        </div>
-      </main>
-    </MobileAppShell>
-  );
-}
+import {useEffect,useState} from "react";
+const api=()=>((process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,""));
+export default function Page(){const [agents,setAgents]=useState<any[]>([]),[jobs,setJobs]=useState<any[]>([]),[agentId,setAgentId]=useState(""),[payload,setPayload]=useState("Run a safe AI task"),[busy,setBusy]=useState(false),[error,setError]=useState("");
+async function load(){const [a,j]=await Promise.all([fetch(`${api()}/api/ai/agents`,{cache:"no-store"}),fetch(`${api()}/api/ai/jobs`,{cache:"no-store"})]);const ad=await a.json(),jd=await j.json();if(!a.ok||!j.ok)throw Error(ad?.error?.message??jd?.error?.message??"Unable to load automation.");setAgents(ad.data??[]);setJobs(jd.data??[]);if(!agentId&&ad.data?.[0])setAgentId(ad.data[0].id)}
+useEffect(()=>{void load().catch(e=>setError(e.message))},[]);
+async function queue(){setBusy(true);try{const r=await fetch(`${api()}/api/ai/jobs`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"agent-task",agentId,payload:{task:payload}})});const d=await r.json();if(!r.ok)throw Error(d?.error?.message??"Unable to queue job.");await load()}catch(e){setError(e instanceof Error?e.message:"Request failed")}finally{setBusy(false)}}
+return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-6 py-10 text-white"><div className="mx-auto max-w-5xl"><p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">AI System / Automation</p><h1 className="mt-2 text-3xl font-bold">Automation Agent</h1><p className="mt-3 text-slate-400">Queue and execute auditable AI jobs.</p><div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5"><select value={agentId} onChange={e=>setAgentId(e.target.value)} className="w-full rounded-xl bg-slate-900 p-3 text-sm">{agents.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select><textarea value={payload} onChange={e=>setPayload(e.target.value)} className="mt-3 min-h-28 w-full rounded-xl bg-black/20 p-3 text-sm ring-1 ring-white/10"/><button onClick={()=>void queue()} disabled={busy||!agentId} className="mt-3 rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950">{busy?"Queuing…":"Queue AI Job"}</button>{error&&<p className="mt-3 text-sm text-red-300">{error}</p>}</div><div className="mt-5 space-y-3">{jobs.map(j=><div key={j.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-sm"><span>{j.type}</span><span className="text-slate-400">{j.status}</span></div>)}</div></div></main></MobileAppShell>}
