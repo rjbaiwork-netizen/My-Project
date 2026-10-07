@@ -1,7 +1,6 @@
 import MobileAppShell from "../../../components/layout/MobileAppShell";
 
 export default function AdminDashboardPage() {
-import MobileAppShell from "../../../components/layout/MobileAppShell";
   return (
     <MobileAppShell theme="light">
       <main className="min-h-screen bg-slate-50 px-6 py-12 text-slate-950">
