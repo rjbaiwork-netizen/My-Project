@@ -1,27 +1,4 @@
 "use client";
 import MobileAppShell from "../../../../components/layout/MobileAppShell";
-
-const cards = [
-  ["Overview","এই workspace-এর প্রধান capability ও বর্তমান অবস্থা এক নজরে দেখুন।","Ready"],
-  ["Recent activity","সাম্প্রতিক activity, result এবং system updates এখানে দেখা যাবে।","Available"],
-  ["Quick action","এই capability থেকে প্রয়োজনীয় কাজ দ্রুত শুরু করুন।","Open"]
-];
-
-export default function Page() {
-  return (
-    <MobileAppShell theme="dark">
-      <main className="px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-xs font-bold uppercase tracking-[.18em] text-blue-400">AI System</p>
-          <div className="mt-2 flex items-start gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 text-xl" aria-hidden="true">🛠️</span>
-            <div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">AI Tools</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">অনুমোদিত tools ও external actions-এর জন্য নিরাপদ AI workspace পরিচালনা করুন।</p></div>
-          </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {cards.map(([label,text,status])=><section key={label} className="rounded-2xl border border-white/10 bg-white/[.05] p-5 shadow-xl shadow-black/10"><div className="flex items-center justify-between"><h2 className="font-bold">{label}</h2><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold text-emerald-300">{status}</span></div><p className="mt-3 text-sm leading-6 text-slate-400">{text}</p></section>)}
-          </div>
-        </div>
-      </main>
-    </MobileAppShell>
-  );
-}
+const tools=[["Run Agent","Execute a configured agent","/aisystem/agent-dashboard"],["Agent Chain","Run multiple agents sequentially","/aisystem/orchestrator"],["Knowledge Search","Search indexed project knowledge","/aisystem/rag"],["Automation","Build and run workflow automations","/aisystem/automation-builder"],["Approvals","Review approval-required runs","/aisystem/approvals"],["Monitoring","Inspect backend readiness and AI worker","/aisystem/monitoring"]];
+export default function Page(){return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-4 py-8 text-white"><div className="mx-auto max-w-6xl"><p className="text-xs font-bold uppercase tracking-[.2em] text-blue-400">AI System / Tools</p><h1 className="mt-2 text-3xl font-bold">AI Tools</h1><p className="mt-3 text-slate-400">বর্তমানে সক্রিয় platform capabilities-এর নিরাপদ entry points.</p><div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{tools.map(([n,d,h])=><a key={n} href={h} className="rounded-2xl border border-white/10 bg-white/5 p-5 hover:bg-white/10"><h2 className="font-bold">{n}</h2><p className="mt-2 text-sm text-slate-400">{d}</p><span className="mt-4 inline-block text-xs font-semibold text-blue-300">Open →</span></a>)}</div></div></main></MobileAppShell>}
