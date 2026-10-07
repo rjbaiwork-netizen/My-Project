@@ -7,21 +7,21 @@ set -euo pipefail
 echo "==> Automation Builder live E2E gate"
 
 READY=0
-for attempt in {1..6}; do
-  if curl --fail --silent --show-error --max-time 10 "$BACKEND_URL/health" >/tmp/automation-health.json; then
-    VERSION="$(node -e 'const x=require("/tmp/automation-health.json");process.stdout.write(String(x.automationEngineVersion||""))')"
-    if [[ "$VERSION" == "2.0" ]]; then READY=1; break; fi
+for attempt in {1..18}; do
+  if curl --fail --silent --show-error --max-time 10 "$BACKEND_URL/ready" >/tmp/automation-ready.json; then
+    node -e 'const x=require("/tmp/automation-ready.json"); if(x.automationEngineVersion==="2.0" && x.status==="ready" && x.database==="ready" && x.worker?.started===true && !x.worker?.lastError) process.exit(0); process.exit(1);' && READY=1 && break
   fi
-  echo "Attempt $attempt/6: automation engine v2 is not live yet"
+  echo "Attempt $attempt/18: backend/worker is not ready yet"
   sleep 10
 done
 
 if [[ "$READY" -ne 1 ]]; then
-  echo "✓ Pre-deploy validation passed; Railway has not switched to automation engine v2 yet."
-  exit 0
+  echo "✗ Production readiness check failed: backend/worker did not become ready within 180 seconds."
+  cat /tmp/automation-ready.json 2>/dev/null || true
+  exit 1
 fi
 
-echo "✓ Automation engine v2 is LIVE"
+echo "✓ Automation engine v2 + database + worker are READY"
 
 node <<'NODE'
 const base=process.env.BACKEND_URL.replace(/\/$/,"");
