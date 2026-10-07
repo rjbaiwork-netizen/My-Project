@@ -22,7 +22,7 @@ export const requireAdminAuth: RequestHandler = (req, res, next) => {
   }
 
   const authorization = req.get("authorization") ?? "";
-  const match = /^Bearer\\s+(.+)$/i.exec(authorization);
+  const match = /^Bearer\s+(.+)$/i.exec(authorization);
   const suppliedToken = match?.[1]?.trim();
 
   if (!suppliedToken) {
