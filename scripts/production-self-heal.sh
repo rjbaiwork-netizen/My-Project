@@ -10,11 +10,32 @@ set -euo pipefail
 : "${BACKEND_URL:?BACKEND_URL is required}"
 : "${FRONTEND_URL:?FRONTEND_URL is required}"
 
+if [[ -n "${RAILWAY_API_TOKEN:-}" ]]; then
+  unset RAILWAY_TOKEN
+  export RAILWAY_API_TOKEN
+  echo "==> Using Railway API token for variable management"
+elif [[ -n "${RAILWAY_TOKEN:-}" ]]; then
+  export RAILWAY_TOKEN
+  echo "==> Using Railway project token"
+else
+  echo "ERROR: Set RAILWAY_API_TOKEN (recommended) or RAILWAY_TOKEN." >&2
+  exit 1
+fi
+
 export RAILWAY_TOKEN
 
 npm install --global @railway/cli >/dev/null 2>&1
 
 railway_args=(--project "$RAILWAY_PROJECT_ID" --service "$RAILWAY_SERVICE_ID" --environment "$RAILWAY_ENVIRONMENT_ID")
+
+echo "==> Validating Railway authentication"
+if ! railway whoami >/tmp/railway-whoami.txt 2>/tmp/railway-auth-error.txt; then
+  echo "ERROR: Railway authentication failed." >&2
+  cat /tmp/railway-auth-error.txt >&2
+  echo "Use a Railway Workspace API Token as RAILWAY_API_TOKEN for variable synchronization." >&2
+  exit 1
+fi
+echo "✓ Railway authentication accepted"
 
 echo "==> Reading Railway ADMIN_API_TOKEN"
 TOKEN="$(railway variable list "${railway_args[@]}" --kv 2>/dev/null | sed -n 's/^ADMIN_API_TOKEN=//p' | head -n1 || true)"
@@ -83,15 +104,22 @@ fi
 
 echo "==> Running production smoke tests"
 
+READY=0
 for attempt in {1..30}; do
   if curl --fail --silent --show-error --max-time 10 "$BACKEND_URL/health" >/tmp/health.json \
     && curl --fail --silent --show-error --max-time 10 "$BACKEND_URL/api/sections" >/tmp/sections.json \
     && curl --fail --silent --show-error --max-time 15 "$FRONTEND_URL" >/tmp/frontend.html; then
+    READY=1
     break
   fi
   echo "Attempt $attempt/30: production endpoints not ready"
   sleep 10
 done
+
+if [[ "$READY" -ne 1 ]]; then
+  echo "ERROR: Production endpoints did not become ready within 5 minutes." >&2
+  exit 1
+fi
 
 node <<'NODE'
 const fs = require("fs");
