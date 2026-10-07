@@ -277,3 +277,6 @@ model AIProviderEvent {
   @@index([success,createdAt])
   @@index([purpose,createdAt])
 }
+
+
+// provider credential lifecycle
