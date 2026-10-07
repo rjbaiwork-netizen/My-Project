@@ -20,7 +20,7 @@ export default function MobileAppShell({children,theme="light"}:{children:ReactN
           <Link href="/" className={"flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold "+(dark?"text-slate-300 hover:bg-white/10":"text-slate-600 hover:bg-slate-100")}><Icon name="home"/><span>Home</span></Link>
           <Link href="/admin/dashboard" className={"flex min-w-0 flex-1 items-center justify-center rounded-xl py-2 text-xs font-semibold "+(dark?"text-slate-300 hover:bg-white/10":"text-slate-600 hover:bg-slate-100")}>Admin</Link>
           <Link href="/project/dashboard" className={"flex min-w-0 flex-1 items-center justify-center rounded-xl py-2 text-xs font-semibold "+(dark?"text-slate-300 hover:bg-white/10":"text-slate-600 hover:bg-slate-100")}>Project</Link>
-          <Link href="/ai/chat-interface" className={"flex min-w-0 flex-1 items-center justify-center rounded-xl py-2 text-xs font-semibold "+(dark?"text-slate-300 hover:bg-white/10":"text-slate-600 hover:bg-slate-100")}>AI</Link>
+          <Link href="/aisystem/chat-interface" className={"flex min-w-0 flex-1 items-center justify-center rounded-xl py-2 text-xs font-semibold "+(dark?"text-slate-300 hover:bg-white/10":"text-slate-600 hover:bg-slate-100")}>AI System</Link>
           <Link href="/" className={"flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold "+(dark?"text-slate-300 hover:bg-white/10":"text-slate-600 hover:bg-slate-100")}><Icon name="back"/><span>Back</span></Link>
         </div>
       </nav>
