@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma.js";
-import { generateAI, retrieveKnowledge } from "../lib/ai.js";
+import { generateAI, retrieveKnowledge, embedText } from "../lib/ai.js";
 import { runAgent } from "../lib/agentOrchestrator.js";
 
 let running=false;
@@ -57,7 +57,8 @@ async function executeAction(action:JsonRecord,output:unknown,automationId:strin
   }
   if(type==="store-memory"){
     const content=typeof action.content==="string"?action.content:JSON.stringify(output);
-    const memory=await prisma.aIMemory.create({data:{namespace:"automation",content,metadata:{automationId,runId}}});
+    let memory=await prisma.aIMemory.create({data:{namespace:"automation",content,metadata:{automationId,runId}}});
+    memory=await prisma.aIMemory.update({where:{id:memory.id},data:{embedding:await embedText(content,"agent")}});
     return {storedMemoryId:memory.id,value:output};
   }
   if(type==="create-task"){
@@ -67,12 +68,12 @@ async function executeAction(action:JsonRecord,output:unknown,automationId:strin
   }
   if(type==="generate-content"){
     const prompt=typeof action.prompt==="string"?action.prompt:`Generate content from this automation input: ${JSON.stringify(output)}`;
-    const text=await generateAI([{role:"system",content:"Generate only the requested content."},{role:"user",content:prompt}]);
+    const text=await generateAI([{role:"system",content:"Generate only the requested content."},{role:"user",content:prompt}],"agent");
     return {text};
   }
   if(type==="search-knowledge"){
     const query=typeof action.query==="string"?action.query:JSON.stringify(output);
-    return await retrieveKnowledge(query,Number(action.limit??5));
+    return await retrieveKnowledge(query,Number(action.limit??5),"agent");
   }
   if(type==="update-content"){
     const key=typeof action.sectionKey==="string"?action.sectionKey.toUpperCase():String((output as JsonRecord)?.sectionKey??"").toUpperCase();
