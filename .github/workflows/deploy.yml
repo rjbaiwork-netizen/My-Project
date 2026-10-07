@@ -2,8 +2,7 @@ name: Production CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -14,26 +13,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deployment-handoff:
-    name: Production deployment handoff
+  production:
+    name: Build, self-heal secrets, deploy and live-test
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
-      - name: Verify production source
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "✓ GitHub commit: ${GITHUB_SHA}"
-          echo "✓ Branch: ${GITHUB_REF_NAME}"
-
-      - name: Install workspace dependencies
+      - name: Install dependencies
         run: npm install
 
       - name: Compile shared contracts
@@ -47,122 +36,26 @@ jobs:
           DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
         run: npm run build:backend
 
-      - name: Verify deployment sources
-        shell: bash
-        run: |
-          echo "✓ Railway source: rjbaiwork-netizen/My-Project"
-          echo "✓ Render source: rjbaiwork-netizen/My-Project"
-
-      - name: Railway deployment handoff
+      - name: Validate deployment configuration
         shell: bash
         run: |
           set -euo pipefail
+          test -n "${RAILWAY_TOKEN}"
+          test -n "${RENDER_API_KEY}"
+          echo "✓ Required automation credentials are present"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RENDER_API_KEY: ${{ secrets.RenderAPIKeys }}
 
-          echo "==> Railway is connected directly to the GitHub repository."
-          echo "==> Push to main triggers Railway's connected-source deployment."
-          echo "==> Railway API credentials are intentionally not required here."
-          echo "✓ Railway deployment handoff complete."
-
-      - name: Render deployment handoff
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "==> Render auto-deploys the connected main branch."
-          echo "==> Push to main triggers the Render deployment automatically."
-          echo "✓ Render deployment handoff complete."
-
-      - name: Production smoke tests
+      - name: Railway -> Render secret synchronization + self-healing production QA
         shell: bash
         env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RENDER_API_KEY: ${{ secrets.RenderAPIKeys }}
+          RAILWAY_PROJECT_ID: 828ab857-c542-4cc1-b1de-6cb1a7b155d5
+          RAILWAY_SERVICE_ID: 8d0e4be9-457d-4b49-b81d-3e375240559a
+          RAILWAY_ENVIRONMENT_ID: production
+          RENDER_SERVICE_ID: srv-db2e1dm0tbcc738tfkk0
           BACKEND_URL: https://my-project-production-9cd9.up.railway.app
           FRONTEND_URL: https://my-project-mk2x.onrender.com
-        run: |
-          set -euo pipefail
-
-          echo "==> Waiting for Railway + Render deployments to settle..."
-
-          for attempt in {1..30}; do
-            if ! HEALTH="$(curl -fsS --max-time 10 "${BACKEND_URL}/health")"; then
-              echo "Attempt ${attempt}/30: /health not ready."
-              sleep 10
-              continue
-            fi
-
-            if ! SECTIONS="$(curl -fsS --max-time 10 "${BACKEND_URL}/api/sections")"; then
-              echo "Attempt ${attempt}/30: /api/sections not ready."
-              sleep 10
-              continue
-            fi
-
-            if ! FRONTEND="$(curl -fsS --max-time 15 "${FRONTEND_URL}")"; then
-              echo "Attempt ${attempt}/30: Render frontend not ready."
-              sleep 10
-              continue
-            fi
-
-            export HEALTH SECTIONS FRONTEND
-
-            if ! python - <<'PY'
-          import json, os
-
-          health = json.loads(os.environ["HEALTH"])
-          sections = json.loads(os.environ["SECTIONS"])
-          frontend = os.environ["FRONTEND"]
-
-          assert health.get("success") is True
-          assert health.get("status") == "ok"
-
-          data = sections.get("data")
-          assert sections.get("success") is True
-          assert isinstance(data, list)
-          assert len(data) >= 10, f"Expected at least 10 CMS sections, got {len(data)}"
-
-          expected = {
-              "HEADER", "HERO", "ABOUT", "SERVICES", "PORTFOLIO",
-              "PRICING", "TESTIMONIALS", "BLOG", "CONTACT", "FOOTER"
-          }
-          actual = {item.get("key") for item in data}
-          missing = expected - actual
-          assert not missing, f"Missing CMS sections: {sorted(missing)}"
-
-          assert "No published content" not in frontend
-          assert "This site is being prepared" not in frontend
-
-          print(f"✓ /health OK: {health}")
-          print(f"✓ /api/sections OK: {len(data)} visible CMS sections")
-          print("✓ All 10 canonical CMS section keys are present")
-          print("✓ Render frontend returned seeded content (empty-state absent)")
-          PY
-            then
-              echo "Attempt ${attempt}/30: CMS/frontend content assertions are not ready."
-              sleep 10
-              continue
-            fi
-
-            ADMIN_STATUS="$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 "${BACKEND_URL}/api/admin/sections")"
-            if [ "${ADMIN_STATUS}" != "401" ]; then
-              echo "Attempt ${attempt}/30: expected unauthenticated admin status 401, got ${ADMIN_STATUS}."
-              sleep 10
-              continue
-            fi
-
-            echo "✓ Admin endpoint rejects unauthenticated requests with HTTP 401"
-            exit 0
-          done
-
-          echo "Production smoke tests failed: services did not become healthy in time."
-          exit 1
-
-      - name: Production deployment summary
-        if: success()
-        shell: bash
-        run: |
-          echo "=============================================="
-          echo "Production deployment + smoke tests completed"
-          echo "Commit: ${GITHUB_SHA}"
-          echo "Railway: connected-source auto deployment"
-          echo "Render: connected-source auto deployment"
-          echo "CMS seed: verified through public API"
-          echo "Admin auth: unauthenticated access rejected"
-          echo "=============================================="
+        run: bash scripts/production-self-heal.sh
