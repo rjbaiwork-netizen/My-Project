@@ -13,6 +13,8 @@ const providers:ProviderDefinition[]=[
   {id:"openai",name:"OpenAI",protocol:"openai-responses",keyEnv:"OPENAI_API_KEY",baseUrl:"https://api.openai.com/v1",
    models:{knowledge:process.env.OPENAI_KNOWLEDGE_MODEL??"gpt-6-luna",agent:process.env.OPENAI_AGENT_MODEL??"gpt-6-luna",production:process.env.OPENAI_PRODUCTION_MODEL??"gpt-6-luna",embed:process.env.AI_EMBEDDING_MODEL??"text-embedding-3-small"},
    capabilities:["chat","agent","content","embedding","rag"]},
+  {id:"groq",name:"Groq",protocol:"openai-chat",keyEnv:"GROQ_API_KEY",baseUrl:"https://api.groq.com/openai/v1",models:{knowledge:process.env.GROQ_KNOWLEDGE_MODEL??"openai/gpt-oss-120b",agent:process.env.GROQ_AGENT_MODEL??"openai/gpt-oss-120b",production:process.env.GROQ_PRODUCTION_MODEL??"openai/gpt-oss-120b"},capabilities:["chat","agent","content"]},
+  {id:"mistral",name:"Mistral",protocol:"openai-chat",keyEnv:"MISTRAL_API_KEY",baseUrl:"https://api.mistral.ai/v1",models:{knowledge:process.env.MISTRAL_KNOWLEDGE_MODEL??"mistral-small-latest",agent:process.env.MISTRAL_AGENT_MODEL??"mistral-small-latest",production:process.env.MISTRAL_PRODUCTION_MODEL??"mistral-small-latest",embed:process.env.MISTRAL_EMBEDDING_MODEL??"mistral-embed"},capabilities:["chat","agent","content","embedding","rag"]},
   {id:"gemini",name:"Google Gemini",protocol:"gemini",keyEnv:"GEMINI_API_KEY",baseUrl:"https://generativelanguage.googleapis.com/v1beta",
    models:{knowledge:process.env.GEMINI_KNOWLEDGE_MODEL??"gemini-3.8-flash",agent:process.env.GEMINI_AGENT_MODEL??"gemini-3.8-flash",production:process.env.GEMINI_PRODUCTION_MODEL??"gemini-3.8-flash",embed:process.env.GEMINI_EMBEDDING_MODEL??"gemini-embedding-2"},
    capabilities:["chat","agent","content","embedding","rag","multimodal"]},
@@ -62,7 +64,9 @@ async function callOpenAIChat(p:ProviderDefinition,messages:{role:string;content
 }
 async function callGemini(p:ProviderDefinition,messages:{role:string;content:string}[],purpose:AIPurpose){
   const key=configuredKey(p,purpose)!;const model=p.models[purpose]!;
-  const system=messages.filter(m=>m.role==="system").map(m=>m.content).join("\n\n");
+  const system=messages.filter(m=>m.role==="system").map(m=>m.content).join("
+
+");
   const contents=messages.filter(m=>m.role!=="system").map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}));
   const url=`${p.baseUrl}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
   const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...(system?{systemInstruction:{parts:[{text:system}]}}:{}),contents})});
