@@ -15,12 +15,14 @@ export async function chat(req:Request,res:Response){
     const [knowledge,memories]=await Promise.all([retrieveKnowledge(message,5,"production").catch(()=>[]),retrieveMemories(message,5,"production").catch(()=>[])]);
     const context=[...knowledge.map(k=>`Knowledge: ${k.title}\n${k.content}`),...memories.map(m=>`Memory: ${m.content}`)].join("\n\n");
     const answer=await generateAI([{role:"system",content:"You are the My-Project AI Assistant. Use verified project context. Never claim an external action was executed without a tool result."},...history.filter(m=>m.role==="user"||m.role==="assistant").map(m=>({role:m.role as "user"|"assistant",content:m.content})),{role:"user",content:context?`Relevant project context:\n${context}\n\nCurrent request:\n${message}`:message}],"production");
+    const requestedAgentId=typeof req.body?.agentId==="string"?req.body.agentId:undefined;
+    const agentRun=requestedAgentId?await runAgent(requestedAgentId,{source:"chat",message,conversationId:conversation.id,context:{knowledgeCount:knowledge.length,memoryCount:memories.length}}):null;
     await prisma.aIMessage.create({data:{conversationId:conversation.id,role:"assistant",content:answer}});
     const memory=await prisma.aIMemory.create({data:{conversationId:conversation.id,namespace:"conversation",content:message,metadata:{type:"user_message"}}});
     const embedding=await embedText(message,"production");
     await prisma.aIMemory.update({where:{id:memory.id},data:{embedding}});
     await prisma.aIConversation.update({where:{id:conversation.id},data:{updatedAt:new Date()}});
-    res.json({success:true,data:{conversationId:conversation.id,answer,knowledge,memories}});
+    res.json({success:true,data:{conversationId:conversation.id,answer,knowledge,memories,agentRun}});
   }catch(error){console.error(error);res.status(503).json({success:false,error:{message:error instanceof Error?error.message:"AI chat failed."}});}
 }
 export async function listAgents(_req:Request,res:Response){try{res.json({success:true,data:await prisma.aIAgent.findMany({orderBy:{createdAt:"asc"}})});}catch{res.status(500).json({success:false,error:{message:"Unable to load AI agents."}});}}
@@ -125,5 +127,56 @@ export async function listAgentRuns(req:Request,res:Response){
     res.json({success:true,data:runs});
   }catch(error){
     res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load agent runs."}});
+  }
+}
+
+
+export async function runAgentChain(req:Request,res:Response){
+  const agentIds=Array.isArray(req.body?.agentIds)?req.body.agentIds.filter((id:unknown):id is string=>typeof id==="string"):[];
+  if(agentIds.length<2)return void res.status(400).json({success:false,error:{message:"agentIds must contain at least two agents."}});
+  try{
+    let current:unknown=req.body?.input??{};
+    const runs=[];
+    for(const agentId of agentIds){
+      const result=await runAgent(agentId,{source:"agent-chain",input:current});
+      runs.push(result);
+      current=result.output??result;
+    }
+    res.status(202).json({success:true,data:{output:current,runs}});
+  }catch(error){
+    res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Agent chain execution failed."}});
+  }
+}
+
+export async function controlCenter(req:Request,res:Response){
+  try{
+    const [agents,automations,conversations,knowledge,memories]=await Promise.all([
+      prisma.aIAgent.findMany({orderBy:{createdAt:"asc"}}),
+      prisma.aIAutomation.findMany({orderBy:{updatedAt:"desc"},take:50}),
+      prisma.aIConversation.findMany({orderBy:{updatedAt:"desc"},take:20,_count:{select:{messages:true,memories:true}}}),
+      prisma.aIKnowledgeDocument.findMany({orderBy:{updatedAt:"desc"},take:20,select:{id:true,title:true,source:true,updatedAt:true,embedding:true}}),
+      prisma.aIMemory.findMany({orderBy:{updatedAt:"desc"},take:20,select:{id:true,namespace:true,updatedAt:true,embedding:true}})
+    ]);
+    const keyStatus={
+      knowledge:Boolean(process.env["My-Project Knowledge"]||process.env.OPENAI_API_KEY),
+      agent:Boolean(process.env["My-Project AI Agent"]||process.env.OPENAI_API_KEY),
+      production:Boolean(process.env["My-Project Production AI"]||process.env.OPENAI_API_KEY)
+    };
+    res.json({success:true,data:{
+      keyStatus,
+      summary:{
+        agents:agents.length,
+        activeAgents:agents.filter(a=>a.status==="ACTIVE").length,
+        automations:automations.length,
+        conversations:conversations.length,
+        knowledge:knowledge.length,
+        indexedKnowledge:knowledge.filter(k=>k.embedding!==null).length,
+        memories:memories.length,
+        embeddedMemories:memories.filter(m=>m.embedding!==null).length
+      },
+      agents,automations,conversations,knowledge,memories
+    }});
+  }catch(error){
+    res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load AI control center."}});
   }
 }
