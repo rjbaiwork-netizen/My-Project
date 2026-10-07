@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addKnowledge, chat, createJob, listAgents, listJobs, listKnowledge, orchestrate, runAgentRoute, agentAutomationOverview, createAutomation, updateAutomation, runAutomation, listAutomationRuns, diagnoseAutomation, brainProfile, linkKnowledgeToAgent, linkMemoryToAgent } from "../controllers/aiController.js";
+import { addKnowledge, chat, createJob, listAgents, listJobs, listKnowledge, orchestrate, runAgentRoute, agentAutomationOverview, createAutomation, updateAutomation, runAutomation, listAutomationRuns, approveAutomationRun, retryAutomationRun, diagnoseAutomation, brainProfile, linkKnowledgeToAgent, linkMemoryToAgent } from "../controllers/aiController.js";
 const router=Router();
 router.post("/chat",chat);
 router.get("/agents",listAgents);
@@ -15,6 +15,8 @@ router.post("/automations",createAutomation);
 router.patch("/automations/:id",updateAutomation);
 router.post("/automations/:id/run",runAutomation);
 router.get("/automations/:id/runs",listAutomationRuns);
+router.post("/automation-runs/:runId/approve",approveAutomationRun);
+router.post("/automation-runs/:runId/retry",retryAutomationRun);
 router.get("/agents/:agentId/brain",brainProfile);
 router.post("/agents/:agentId/brain/knowledge",linkKnowledgeToAgent);
 router.post("/agents/:agentId/brain/memory",linkMemoryToAgent);
