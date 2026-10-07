@@ -1,3 +1,5 @@
+import MobileAppShell from "../../../components/layout/MobileAppShell";
+
 export default function AdminSettingsPage() {
 import MobileAppShell from "../../../components/layout/MobileAppShell";
   return (
