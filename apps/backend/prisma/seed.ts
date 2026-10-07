@@ -142,7 +142,7 @@ async function main() {
     });
   }
 
-  console.log(`Seeded ${sections.length} CMS sections.`);
+  for(const agent of agents)await prisma.aIAgent.upsert({where:{key:agent.key},update:{name:agent.name,description:agent.description,systemPrompt:agent.systemPrompt},create:agent});\n  console.log(`Seeded ${sections.length} CMS sections and ${agents.length} AI agents.`);
 }
 
 main()
