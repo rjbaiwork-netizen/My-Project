@@ -10,3 +10,28 @@ export async function createJob(req:Request,res:Response){const {type,payload,ag
 export async function listJobs(_req:Request,res:Response){try{res.json({success:true,data:await prisma.aIJob.findMany({orderBy:{createdAt:"desc"},take:100})});}catch{res.status(500).json({success:false,error:{message:"Unable to load AI jobs."}});}}
 export async function addKnowledge(req:Request,res:Response){const {title,content,source,metadata}=req.body??{};if(typeof title!=="string"||!title.trim()||typeof content!=="string"||!content.trim())return void res.status(400).json({success:false,error:{message:"title and content are required."}});const doc=await prisma.aIKnowledgeDocument.create({data:{title:title.trim(),content:content.trim(),source:typeof source==="string"?source:undefined,metadata:metadata??undefined}});void indexKnowledge(doc.id).catch(()=>undefined);res.status(201).json({success:true,data:doc});}
 export async function listKnowledge(_req:Request,res:Response){try{res.json({success:true,data:await prisma.aIKnowledgeDocument.findMany({orderBy:{updatedAt:"desc"}})});}catch{res.status(500).json({success:false,error:{message:"Unable to load knowledge base."}});}}
+
+
+export async function agentAutomationOverview(_req:Request,res:Response){
+  try{
+    const agents=await prisma.aIAgent.findMany({
+      include:{brainCategories:{orderBy:{updatedAt:"desc"}},_count:{select:{runs:true,jobs:true,automations:true}}},
+      orderBy:{createdAt:"asc"}
+    });
+    const automations=await prisma.aIAutomation.findMany({include:{agent:true},orderBy:{updatedAt:"desc"},take:50});
+    res.json({success:true,data:{agents,automations}});
+  }catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load agent automation workspace."}});}
+}
+
+export async function createAutomation(req:Request,res:Response){
+  const {name,description,trigger,conditions,actions,agentId}=req.body??{};
+  if(typeof name!=="string"||!name.trim()||!trigger||!actions)return void res.status(400).json({success:false,error:{message:"name, trigger and actions are required."}});
+  try{
+    const automation=await prisma.aIAutomation.create({data:{
+      name:name.trim(),description:typeof description==="string"?description:undefined,
+      trigger,conditions:conditions??undefined,actions,
+      agentId:typeof agentId==="string"?agentId:undefined
+    }});
+    res.status(201).json({success:true,data:automation});
+  }catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to create automation."}});}
+}
