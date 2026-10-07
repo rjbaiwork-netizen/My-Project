@@ -1,22 +1,9 @@
 "use client";
 import MobileAppShell from "../../../../components/layout/MobileAppShell";
-
-export default function Page() {
-  return (
-    <MobileAppShell theme="dark">
-      <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
-        <div className="mx-auto max-w-5xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">My Project / AI System</p>
-          <div className="mt-3 flex items-start gap-4">
-            <span className="text-3xl" aria-hidden="true">📚</span>
-            <div><h1 className="text-3xl font-bold tracking-tight">AI Knowledge Base</h1><p className="mt-3 max-w-3xl text-slate-400">AI-এর জন্য structured project knowledge, documentation এবং reference content management।</p></div>
-          </div>
-          <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
-            <p className="text-sm font-semibold text-slate-200">AI System Workspace</p>
-            <p className="mt-2 text-sm text-slate-400">This page is the dedicated foundation for this AI System capability. Execution engines and production integrations can be connected in the next implementation phase.</p>
-          </div>
-        </div>
-      </main>
-    </MobileAppShell>
-  );
-}
+import {useEffect,useState} from "react";
+const api=()=>((process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,""));
+export default function Page(){const [items,setItems]=useState<any[]>([]),[title,setTitle]=useState(""),[content,setContent]=useState(""),[loading,setLoading]=useState(false),[error,setError]=useState("");
+async function load(){const r=await fetch(`${api()}/api/ai/knowledge`,{cache:"no-store"});const d=await r.json();if(!r.ok)throw Error(d?.error?.message??"Unable to load knowledge.");setItems(d.data??[])}
+useEffect(()=>{void load().catch(e=>setError(e.message))},[]);
+async function add(){if(!title.trim()||!content.trim())return;setLoading(true);setError("");try{const r=await fetch(`${api()}/api/ai/knowledge`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title,content,source:"AI System"})});const d=await r.json();if(!r.ok)throw Error(d?.error?.message??"Unable to add knowledge.");setTitle("");setContent("");await load()}catch(e){setError(e instanceof Error?e.message:"Request failed")}finally{setLoading(false)}}
+return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-6 py-10 text-white"><div className="mx-auto max-w-5xl"><p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">AI System / RAG</p><h1 className="mt-2 text-3xl font-bold">AI Knowledge Base</h1><p className="mt-3 text-slate-400">Knowledge documents are embedded for semantic retrieval by AI agents.</p><div className="mt-8 grid gap-5 md:grid-cols-2"><div className="rounded-2xl border border-white/10 bg-white/5 p-5"><input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Knowledge title" className="w-full rounded-xl bg-black/20 p-3 text-sm ring-1 ring-white/10"/><textarea value={content} onChange={e=>setContent(e.target.value)} placeholder="Knowledge content..." className="mt-3 min-h-40 w-full rounded-xl bg-black/20 p-3 text-sm ring-1 ring-white/10"/><button onClick={()=>void add()} disabled={loading} className="mt-3 rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950">{loading?"Indexing…":"Add & Index"}</button>{error&&<p className="mt-3 text-sm text-red-300">{error}</p>}</div><div className="space-y-3">{items.map(x=><article key={x.id} className="rounded-2xl border border-white/10 bg-white/5 p-4"><h2 className="font-semibold">{x.title}</h2><p className="mt-2 text-sm text-slate-400 line-clamp-4">{x.content}</p><span className="mt-3 inline-block text-xs text-slate-500">{x.embedding?"Embedded":"Indexing pending"}</span></article>)}</div></div></div></main></MobileAppShell>}
