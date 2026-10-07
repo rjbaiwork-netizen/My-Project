@@ -1,20 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-const menu = [
-  { label: "Overview", href: "/dashboard" },
-  { label: "Website", href: "/" },
-  { label: "Content", href: "/admin/system-config" },
-  { label: "AI Chat", href: "/aisystem/chat-interface" },
-  { label: "Knowledge Base", href: "/aisystem/knowledge-base" },
-  { label: "AI Agents", href: "/aisystem/agent-dashboard" },
-  { label: "Automation", href: "/aisystem/automation" },
-  { label: "Tasks", href: "/aisystem/jobs" },
-  { label: "Approvals", href: "/aisystem/approvals" },
-  { label: "Monitoring", href: "/aisystem/monitoring" },
-];
 
 const quickActions = [
   ["AI Chat", "Start a conversation", "/aisystem/chat-interface"],
@@ -32,12 +18,10 @@ const activity = [
 ];
 
 export default function Dashboard() {
-  const pathname = usePathname();
-
   return (
     <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
           <div>
             <p className="text-sm font-semibold text-blue-600">Application Workspace</p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight">Dashboard</h1>
@@ -45,25 +29,9 @@ export default function Dashboard() {
               Manage your website, AI system and daily work from one place.
             </p>
           </div>
-          <Link href="/aisystem/chat-interface" className="rounded-xl bg-slate-950 px-4 py-2.5 text-center text-sm font-semibold text-white">
-            Open AI Chat
-          </Link>
+
         </div>
       </div>
-
-      <section className="mb-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
-        <div className="flex min-w-max gap-1">
-          {menu.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={"rounded-xl px-4 py-2.5 text-sm font-semibold " + (pathname === item.href ? "bg-slate-950 text-white" : "text-slate-600 hover:bg-slate-100")}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-      </section>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
