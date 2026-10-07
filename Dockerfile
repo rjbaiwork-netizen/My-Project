@@ -10,7 +10,8 @@ RUN npm install
 
 FROM deps AS builder
 COPY . .
-RUN npm run build --workspace=frontend
+RUN npm run build:shared
+RUN npm run build:frontend
 
 FROM node:22-alpine AS runner
 WORKDIR /app
