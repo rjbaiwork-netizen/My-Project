@@ -1,4 +1,30 @@
 import { prisma } from "./prisma.js";
 import { generateAI, retrieveKnowledge, retrieveMemories } from "./ai.js";
-export async function runAgent(agentId:string,input:unknown){const agent=await prisma.aIAgent.findUnique({where:{id:agentId}});if(!agent||agent.status!=="ACTIVE")throw new Error("Agent is not active.");const run=await prisma.aIAgentRun.create({data:{agentId,status:"RUNNING",input:input as any,startedAt:new Date()}});try{const request=typeof input==="string"?input:JSON.stringify(input);const [knowledge,memories]=await Promise.all([retrieveKnowledge(request,6).catch(()=>[]),retrieveMemories(request,6).catch(()=>[])]);const context=[...knowledge.map(k=>`Knowledge: ${k.title}\n${k.content}`),...memories.map(m=>`Memory: ${m.content}`)].join("\n\n");const output=await generateAI([{role:"system",content:agent.systemPrompt},{role:"user",content:context?`Project context:\n${context}\n\nTask:\n${request}`:request}]);return await prisma.aIAgentRun.update({where:{id:run.id},data:{status:"SUCCEEDED",output:{text:output},finishedAt:new Date()}});}catch(error){await prisma.aIAgentRun.update({where:{id:run.id},data:{status:"FAILED",error:error instanceof Error?error.message:"Agent execution failed.",finishedAt:new Date()}});throw error;}}
-export async function runOrchestrator(input:unknown){const agent=await prisma.aIAgent.findFirst({where:{key:"multi-agent-orchestrator",status:"ACTIVE"}});if(!agent)throw new Error("Multi-Agent Orchestrator is not registered.");return runAgent(agent.id,input);}
+
+export async function runAgent(agentId:string,input:unknown){
+  const agent=await prisma.aIAgent.findUnique({where:{id:agentId}});
+  if(!agent||agent.status!=="ACTIVE") throw new Error("Agent is not active.");
+  const run=await prisma.aIAgentRun.create({data:{agentId,status:"RUNNING",input:input as any,startedAt:new Date()}});
+  try{
+    const request=typeof input==="string"?input:JSON.stringify(input);
+    const [knowledge,memories]=await Promise.all([
+      retrieveKnowledge(request,6,"agent").catch(()=>[]),
+      retrieveMemories(request,6,"agent").catch(()=>[])
+    ]);
+    const context=[...knowledge.map(k=>`Knowledge: ${k.title}\n${k.content}`),...memories.map(m=>`Memory: ${m.content}`)].join("\n\n");
+    const output=await generateAI([
+      {role:"system",content:agent.systemPrompt},
+      {role:"user",content:context?`Project context:\n${context}\n\nTask:\n${request}`:request}
+    ],"agent");
+    return await prisma.aIAgentRun.update({where:{id:run.id},data:{status:"SUCCEEDED",output:{text:output},finishedAt:new Date()}});
+  }catch(error){
+    await prisma.aIAgentRun.update({where:{id:run.id},data:{status:"FAILED",error:error instanceof Error?error.message:"Agent execution failed.",finishedAt:new Date()}});
+    throw error;
+  }
+}
+
+export async function runOrchestrator(input:unknown){
+  const agent=await prisma.aIAgent.findFirst({where:{key:"multi-agent-orchestrator",status:"ACTIVE"}});
+  if(!agent) throw new Error("Multi-Agent Orchestrator is not registered.");
+  return runAgent(agent.id,input);
+}
