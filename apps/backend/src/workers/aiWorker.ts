@@ -168,13 +168,30 @@ export async function startAIWorker(intervalMs=15000){
         }
       }
 
-      const scheduled=await prisma.aIAutomation.findMany({where:{status:"ACTIVE",trigger:{path:["type"],equals:"schedule"}},take:10});
+      const scheduled=await prisma.aIAutomation.findMany({where:{status:"ACTIVE",trigger:{path:["type"],equals:"schedule"}},take:50});
       for(const automation of scheduled){
-        const intervalSeconds=Number((automation.trigger as JsonRecord)?.intervalSeconds??0);
-        if(intervalSeconds>0){
-          const last=await prisma.aIAutomationRun.findFirst({where:{automationId:automation.id},orderBy:{createdAt:"desc"}});
-          if(!last||Date.now()-last.createdAt.getTime()>=intervalSeconds*1000)await prisma.aIAutomationRun.create({data:{automationId:automation.id,status:"QUEUED",input:{trigger:"schedule"}}});
+        const trigger=(automation.trigger??{}) as JsonRecord;
+        const mode=String(trigger.mode??"interval").toLowerCase();
+        const intervalSeconds=Math.max(60,Number(trigger.intervalSeconds??0)||0);
+        const last=await prisma.aIAutomationRun.findFirst({where:{automationId:automation.id},orderBy:{createdAt:"desc"}});
+        const lastAt=last?.createdAt?.getTime()??0;
+        let due=false;
+        if(mode==="interval"&&intervalSeconds>0) due=!last||Date.now()-lastAt>=intervalSeconds*1000;
+        else if(mode==="once"){
+          const at=Date.parse(String(trigger.at??""));
+          due=Number.isFinite(at)&&at<=Date.now()&&!last;
+        } else if(mode==="daily"||mode==="weekly"||mode==="monthly"){
+          const at=String(trigger.time??"09:00").match(/^(\\d{1,2}):(\\d{2})$/);
+          if(at){
+            const now=new Date(), candidate=new Date(now);
+            candidate.setHours(Number(at[1]),Number(at[2]),0,0);
+            const days=mode==="weekly"?Number(trigger.dayOfWeek??1):mode==="monthly"?Number(trigger.dayOfMonth??1):0;
+            if(mode==="weekly")candidate.setDate(candidate.getDate()-((candidate.getDay()-days+7)%7));
+            if(mode==="monthly")candidate.setDate(Math.min(days,new Date(now.getFullYear(),now.getMonth()+1,0).getDate()));
+            due=candidate.getTime()<=Date.now() && (!last||lastAt<candidate.getTime());
+          }
         }
+        if(due)await prisma.aIAutomationRun.create({data:{automationId:automation.id,status:"QUEUED",input:{trigger:"schedule",scheduleMode:mode}}});
       }
     }catch(error){
       lastError=error instanceof Error?error.message:"Automation worker tick failed.";
