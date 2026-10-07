@@ -43,3 +43,58 @@ export async function listAutomationRuns(req:Request,res:Response){try{const aut
 export async function brainProfile(req:Request,res:Response){try{const agentId=String(req.params.agentId);const agent=await prisma.aIAgent.findUnique({where:{id:agentId},include:{brainCategories:{include:{metrics:{orderBy:{metricDate:"asc"},take:90}},orderBy:{key:"asc"}}}});if(!agent)return void res.status(404).json({success:false,error:{message:"Agent not found."}});const categories=await Promise.all(agent.brainCategories.map(async c=>{const [knowledgeCount,memoryCount]=await Promise.all([prisma.aIAgentKnowledge.count({where:{agentId,categoryId:c.id}}),prisma.aIAgentMemory.count({where:{agentId,categoryId:c.id}})]);const dataCount=knowledgeCount+memoryCount;const progress=Math.min(100,Math.round((knowledgeCount+memoryCount+c.dataCount)/Math.max(1,10+c.dataCount)*100));await prisma.aIAgentBrainCategory.update({where:{id:c.id},data:{knowledgeCount,memoryCount,dataCount,progress}});await prisma.aIBrainMetric.create({data:{categoryId:c.id,progress,dataCount,memoryCount,knowledgeCount}});return {...c,knowledgeCount,memoryCount,dataCount,progress};}));const overall=categories.length?Math.round(categories.reduce((sum,c)=>sum+c.progress,0)/categories.length):0;res.json({success:true,data:{agent:{id:agent.id,name:agent.name,status:agent.status},overall,categories}});}catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load brain profile."}});}}
 export async function linkKnowledgeToAgent(req:Request,res:Response){try{const agentId=String(req.params.agentId),knowledgeId=String(req.body?.knowledgeId),categoryId=typeof req.body?.categoryId==="string"?req.body.categoryId:undefined;if(!knowledgeId)return void res.status(400).json({success:false,error:{message:"knowledgeId is required."}});const link=await prisma.aIAgentKnowledge.upsert({where:{agentId_knowledgeId:{agentId,knowledgeId}},update:{categoryId},create:{agentId,knowledgeId,categoryId}});res.status(201).json({success:true,data:link});}catch(error){res.status(400).json({success:false,error:{message:error instanceof Error?error.message:"Unable to link knowledge."}});}}
 export async function linkMemoryToAgent(req:Request,res:Response){try{const agentId=String(req.params.agentId),memoryId=String(req.body?.memoryId),categoryId=typeof req.body?.categoryId==="string"?req.body.categoryId:undefined;if(!memoryId)return void res.status(400).json({success:false,error:{message:"memoryId is required."}});const link=await prisma.aIAgentMemory.upsert({where:{agentId_memoryId:{agentId,memoryId}},update:{categoryId},create:{agentId,memoryId,categoryId}});res.status(201).json({success:true,data:link});}catch(error){res.status(400).json({success:false,error:{message:error instanceof Error?error.message:"Unable to link memory."}});}}
+
+export async function getAgent(req:Request,res:Response){
+  try{
+    const agent=await prisma.aIAgent.findUnique({
+      where:{id:String(req.params.id)},
+      include:{brainCategories:{orderBy:{key:"asc"}},_count:{select:{runs:true,jobs:true,automations:true}}}
+    });
+    if(!agent)return void res.status(404).json({success:false,error:{message:"Agent not found."}});
+    res.json({success:true,data:agent});
+  }catch(error){
+    res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load agent."}});
+  }
+}
+export async function createAgent(req:Request,res:Response){
+  const {key,name,description,systemPrompt,status}=req.body??{};
+  if(typeof key!=="string"||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(key.trim()))return void res.status(400).json({success:false,error:{message:"key must use lowercase letters, numbers and hyphens."}});
+  if(typeof name!=="string"||!name.trim()||typeof description!=="string"||!description.trim()||typeof systemPrompt!=="string"||!systemPrompt.trim())return void res.status(400).json({success:false,error:{message:"name, description and systemPrompt are required."}});
+  if(status!==undefined&&!["ACTIVE","PAUSED","DISABLED"].includes(String(status)))return void res.status(400).json({success:false,error:{message:"Invalid agent status."}});
+  try{
+    const agent=await prisma.aIAgent.create({data:{key:key.trim(),name:name.trim(),description:description.trim(),systemPrompt:systemPrompt.trim(),status:status??"ACTIVE"}});
+    const categories=[["knowledge","Knowledge","Verified information available to the agent."],["memory","Memory","Persistent useful context learned from interactions."],["website","Website","Website structure, content and operational knowledge."],["content","Content","Content patterns, drafts, preferences and history."],["automation","Automation","Automation rules, workflows and execution patterns."],["tasks","Tasks","Task history, outcomes and reusable task context."]];
+    await prisma.aIAgentBrainCategory.createMany({data:categories.map(([categoryKey,categoryName,categoryDescription])=>({agentId:agent.id,key:categoryKey,name:categoryName,description:categoryDescription}))});
+    res.status(201).json({success:true,data:agent});
+  }catch(error){
+    const message=error instanceof Error?error.message:"Unable to create agent.";
+    res.status(message.toLowerCase().includes("unique")?409:500).json({success:false,error:{message}});
+  }
+}
+export async function updateAgent(req:Request,res:Response){
+  const id=String(req.params.id);
+  const {name,description,systemPrompt,status}=req.body??{};
+  if(status!==undefined&&!["ACTIVE","PAUSED","DISABLED"].includes(String(status)))return void res.status(400).json({success:false,error:{message:"Invalid agent status."}});
+  const data:any={};
+  if(typeof name==="string"&&name.trim())data.name=name.trim();
+  if(typeof description==="string")data.description=description.trim();
+  if(typeof systemPrompt==="string"&&systemPrompt.trim())data.systemPrompt=systemPrompt.trim();
+  if(status!==undefined)data.status=status;
+  if(!Object.keys(data).length)return void res.status(400).json({success:false,error:{message:"No valid agent changes supplied."}});
+  try{
+    const agent=await prisma.aIAgent.update({where:{id},data});
+    res.json({success:true,data:agent});
+  }catch(error){
+    res.status(404).json({success:false,error:{message:error instanceof Error?error.message:"Agent not found."}});
+  }
+}
+export async function listAgentRuns(req:Request,res:Response){
+  try{
+    const agent=await prisma.aIAgent.findUnique({where:{id:String(req.params.id)},select:{id:true}});
+    if(!agent)return void res.status(404).json({success:false,error:{message:"Agent not found."}});
+    const runs=await prisma.aIAgentRun.findMany({where:{agentId:agent.id},orderBy:{createdAt:"desc"},take:100});
+    res.json({success:true,data:runs});
+  }catch(error){
+    res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to load agent runs."}});
+  }
+}
