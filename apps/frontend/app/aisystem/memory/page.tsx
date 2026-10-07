@@ -1,27 +1,17 @@
 "use client";
+
 import MobileAppShell from "../../../../components/layout/MobileAppShell";
+import {useEffect,useState} from "react";
 
-const cards = [
-  ["Overview","A clear, focused workspace for this capability.","Ready"],
-  ["Recent activity","Activity and results will appear here as the system is used.","Available"],
-  ["Quick action","Start working with this feature from the controls below.","Open"]
-];
-
-export default function Page() {
-  return (
-    <MobileAppShell theme="dark">
-      <main className="px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-xs font-bold uppercase tracking-[.18em] text-blue-400">AI System</p>
-          <div className="mt-2 flex items-start gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 text-xl">🧠</span>
-            <div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">AI Memory</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">AI-এর কাছে সংরক্ষিত গুরুত্বপূর্ণ তথ্য ও context দেখুন।</p></div>
-          </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {cards.map(([label,text,status])=><section key={label} className="rounded-2xl border border-white/10 bg-white/[.05] p-5 shadow-xl shadow-black/10"><div className="flex items-center justify-between"><h2 className="font-bold">{label}</h2><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold text-emerald-300">{status}</span></div><p className="mt-3 text-sm leading-6 text-slate-400">{text}</p></section>)}
-          </div>
-        </div>
-      </main>
-    </MobileAppShell>
-  );
+type Memory={id:string;content:string;namespace:string;createdAt:string;metadata?:any};
+export default function MemoryPage(){
+ const [items,setItems]=useState<Memory[]>([]),[content,setContent]=useState(""),[namespace,setNamespace]=useState("default"),[error,setError]=useState(""),[loading,setLoading]=useState(false);
+ const base=(process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,"");
+ async function load(){const r=await fetch(base+"/api/ai/memories",{cache:"no-store"});const d=await r.json();if(!r.ok)throw Error(d?.error?.message??"Unable to load memories.");setItems(d.data??[])}
+ useEffect(()=>{void load().catch(e=>setError(e.message))},[]);
+ async function add(){if(!content.trim())return;setLoading(true);setError("");try{const r=await fetch(base+"/api/ai/memories",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({content,namespace})});const d=await r.json();if(!r.ok)throw Error(d?.error?.message??"Unable to save memory.");setContent("");await load()}catch(e){setError(e instanceof Error?e.message:"Request failed")}finally{setLoading(false)}}
+ async function remove(id:string){const r=await fetch(base+"/api/ai/memories/"+id,{method:"DELETE"});const d=await r.json();if(!r.ok)throw Error(d?.error?.message??"Unable to delete memory.");await load()}
+ return <MobileAppShell theme="dark"><main className="min-h-screen px-4 py-8 text-white sm:px-6 lg:px-8"><div className="mx-auto max-w-6xl"><p className="text-xs font-bold uppercase tracking-[.18em] text-blue-400">AI System / Memory</p><h1 className="mt-2 text-3xl font-bold">AI Memory</h1><p className="mt-3 text-slate-400">Persistent context that can be retrieved by AI conversations and the existing agent brain.</p>
+ <div className="mt-8 grid gap-5 lg:grid-cols-[360px_1fr]"><section className="rounded-2xl border border-white/10 bg-slate-900/80 p-5"><h2 className="font-bold">Store Memory</h2><input value={namespace} onChange={e=>setNamespace(e.target.value)} placeholder="Namespace" className="mt-4 w-full rounded-xl bg-black/20 p-3 text-sm ring-1 ring-white/10"/><textarea value={content} onChange={e=>setContent(e.target.value)} placeholder="Important information or context..." className="mt-3 min-h-40 w-full rounded-xl bg-black/20 p-3 text-sm ring-1 ring-white/10"/><button onClick={()=>void add()} disabled={loading||!content.trim()} className="mt-3 rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50">{loading?"Saving…":"Save Memory"}</button>{error&&<p className="mt-3 text-sm text-red-300">{error}</p>}</section>
+ <section><div className="mb-3 flex items-center justify-between"><h2 className="font-bold">Memory Library</h2><span className="text-xs text-slate-500">{items.length} memories</span></div><div className="space-y-3">{items.map(x=><article key={x.id} className="rounded-2xl border border-white/10 bg-white/5 p-4"><div className="flex items-start justify-between gap-3"><div><span className="text-[10px] font-bold uppercase tracking-wider text-blue-300">{x.namespace}</span><p className="mt-2 text-sm leading-6 text-slate-200">{x.content}</p></div><button onClick={()=>void remove(x.id).catch(e=>setError(e.message))} className="text-xs text-red-300">Delete</button></div><p className="mt-3 text-[10px] text-slate-500">{new Date(x.createdAt).toLocaleString()}</p></article>)}{!items.length&&<p className="rounded-xl border border-white/10 p-6 text-sm text-slate-500">No memories yet.</p>}</div></section></div></div></main></MobileAppShell>
 }
