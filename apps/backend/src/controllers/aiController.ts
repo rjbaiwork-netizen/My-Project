@@ -189,3 +189,5 @@ export async function controlCenter(req:Request,res:Response){
 }
 
 export async function reindexKnowledgeRoute(_req:Request,res:Response){try{res.json({success:true,data:await reindexKnowledge()});}catch(error){res.status(503).json({success:false,error:{message:error instanceof Error?error.message:"Knowledge reindex failed."}});}}
+
+export async function reindexKnowledgeRoute(_req:Request,res:Response){try{res.json({success:true,data:await reindexKnowledge()});}catch(error){res.status(503).json({success:false,error:{message:error instanceof Error?error.message:"Knowledge reindex failed."}});}}
