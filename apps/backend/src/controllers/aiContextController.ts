@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
-import { embedText, indexKnowledge, retrieveMemories } from "../lib/ai.js";
+import { embedText, indexKnowledge, retrieveKnowledge, retrieveMemories } from "../lib/ai.js";
 
 export async function listConversations(_req:Request,res:Response){
   try{
@@ -67,6 +67,12 @@ export async function updateKnowledge(req:Request,res:Response){
     if(changedContent)void indexKnowledge(doc.id).catch(error=>console.error("Knowledge re-index failed",error));
     res.json({success:true,data:doc});
   }catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to update knowledge."}});}
+}
+export async function searchKnowledge(req:Request,res:Response){
+  const q=typeof req.query.q==="string"?req.query.q.trim():"";
+  if(!q)return void res.status(400).json({success:false,error:{message:"q is required."}});
+  try{const items=await retrieveKnowledge(q,10);res.json({success:true,data:items});}
+  catch(error){res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to search knowledge."}});}
 }
 export async function deleteKnowledge(req:Request,res:Response){
   try{await prisma.aIKnowledgeDocument.delete({where:{id:String(req.params.id)}});res.json({success:true});}
