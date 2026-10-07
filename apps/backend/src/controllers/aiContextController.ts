@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../lib/prisma.js";
+import { embedText } from "../lib/ai.js";
 
 export async function listConversations(_req:Request,res:Response){
   try{
@@ -67,6 +68,7 @@ export async function createMemory(req:Request,res:Response){
         metadata:req.body?.metadata??{type:"manual"}
       }
     });
+    void embedText(content).then(embedding=>prisma.aIMemory.update({where:{id:memory.id},data:{embedding}})).catch(error=>console.error("Memory embedding failed",error));
     res.status(201).json({success:true,data:memory});
   }catch(error){
     res.status(500).json({success:false,error:{message:error instanceof Error?error.message:"Unable to create memory."}});
