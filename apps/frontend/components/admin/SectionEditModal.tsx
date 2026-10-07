@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { CMSSection } from "../../lib/api";
+import type { JsonValue } from "@my-project/shared";
 
 interface SectionEditModalProps {
   section: CMSSection | null;
@@ -9,7 +10,7 @@ interface SectionEditModalProps {
   onClose: () => void;
   onSave: (payload: {
     title: string;
-    content: Record<string, unknown> | unknown[];
+    content: JsonValue;
   }) => Promise<void>;
 }
 
@@ -63,7 +64,7 @@ export default function SectionEditModal({
       setJsonError(null);
       await onSave({
         title: title.trim(),
-        content: parsed as Record<string, unknown> | unknown[]
+        content: parsed as JsonValue
       });
     } catch {
       setJsonError("Invalid JSON. Check commas, quotes, brackets, and values.");
