@@ -1,10 +1,13 @@
+CREATE TYPE "AIAgentStatus" AS ENUM ('ACTIVE','PAUSED','DISABLED');
+CREATE TYPE "AIJobStatus" AS ENUM ('QUEUED','RUNNING','SUCCEEDED','FAILED','CANCELLED');
+
 CREATE TABLE "AIAgent" (
   "id" TEXT NOT NULL,
   "key" TEXT NOT NULL,
   "name" TEXT NOT NULL,
   "description" TEXT NOT NULL,
   "systemPrompt" TEXT NOT NULL,
-  "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+  "status" "AIAgentStatus" NOT NULL DEFAULT 'ACTIVE',
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL,
   CONSTRAINT "AIAgent_pkey" PRIMARY KEY ("id")
@@ -58,7 +61,7 @@ CREATE INDEX "AIKnowledgeDocument_createdAt_idx" ON "AIKnowledgeDocument"("creat
 CREATE TABLE "AIAgentRun" (
   "id" TEXT NOT NULL,
   "agentId" TEXT NOT NULL,
-  "status" TEXT NOT NULL DEFAULT 'QUEUED',
+  "status" "AIJobStatus" NOT NULL DEFAULT 'QUEUED',
   "input" JSONB,
   "output" JSONB,
   "error" TEXT,
@@ -74,7 +77,7 @@ CREATE TABLE "AIJob" (
   "agentId" TEXT,
   "type" TEXT NOT NULL,
   "payload" JSONB NOT NULL,
-  "status" TEXT NOT NULL DEFAULT 'QUEUED',
+  "status" "AIJobStatus" NOT NULL DEFAULT 'QUEUED',
   "scheduledAt" TIMESTAMP(3),
   "attempts" INTEGER NOT NULL DEFAULT 0,
   "lastError" TEXT,
