@@ -122,7 +122,162 @@ model AIKnowledgeDocument {
   source     String?
   metadata   Json?
   embedding  Json?
+  embeddingProvider String? @default("openai")
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([createdAt])
+  agentLinks AIAgentKnowledge[]
+}
+
+model AIAgentKnowledge {
+  id String @id @default(cuid())
+  agentId String
+  knowledgeId String
+  categoryId String?
+  agent AIAgent @relation(fields:[agentId],references:[id],onDelete:Cascade)
+  knowledge AIKnowledgeDocument @relation(fields:[knowledgeId],references:[id],onDelete:Cascade)
+  category AIAgentBrainCategory? @relation(fields:[categoryId],references:[id],onDelete:SetNull)
+  createdAt DateTime @default(now())
+  @@unique([agentId,knowledgeId])
+  @@index([agentId,categoryId])
+}
+
+model AIAgentRun {
+  id        String       @id @default(cuid())
+  agentId   String
+  status    AIJobStatus  @default(QUEUED)
+  input     Json?
+  output    Json?
+  error     String?
+  startedAt DateTime?
+  finishedAt DateTime?
+  createdAt DateTime     @default(now())
+  agent     AIAgent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  @@index([agentId, createdAt])
+}
+
+model AIJob {
+  id          String       @id @default(cuid())
+  agentId     String?
+  type        String
+  payload     Json
+  status      AIJobStatus  @default(QUEUED)
+  scheduledAt DateTime?
+  attempts    Int          @default(0)
+  lastError   String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  agent       AIAgent?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  @@index([status, scheduledAt])
+  @@index([agentId, createdAt])
+}
+
+
+
+enum AIAutomationStatus {
+  ACTIVE
+  PAUSED
+  DRAFT
+}
+
+model AIAgentBrainCategory {
+  id          String   @id @default(cuid())
+  agentId     String
+  key         String
+  name        String
+  description String?
+  progress    Int      @default(0)
+  dataCount   Int      @default(0)
+  memoryCount Int      @default(0)
+  knowledgeCount Int    @default(0)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  agent       AIAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  metrics     AIBrainMetric[]
+  agentMemories AIAgentMemory[]
+  agentKnowledge AIAgentKnowledge[]
+  @@unique([agentId, key])
+  @@index([agentId, updatedAt])
+}
+
+model AIBrainMetric {
+  id         String   @id @default(cuid())
+  categoryId String
+  metricDate DateTime @default(now())
+  progress   Int
+  dataCount  Int      @default(0)
+  memoryCount Int     @default(0)
+  knowledgeCount Int  @default(0)
+  category   AIAgentBrainCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  @@index([categoryId, metricDate])
+}
+
+model AIAutomation {
+  id          String             @id @default(cuid())
+  name        String
+  description String?
+  status      AIAutomationStatus @default(DRAFT)
+  trigger     Json
+  conditions  Json?
+  actions     Json
+  agentId     String?
+  approval    Json?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  agent       AIAgent?           @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  runs        AIAutomationRun[]
+  @@index([status, updatedAt])
+  @@index([agentId, updatedAt])
+}
+
+model AIAutomationRun {
+  id           String       @id @default(cuid())
+  automationId String
+  status       AIJobStatus  @default(QUEUED)
+  input        Json?
+  output       Json?
+  error        String?
+  steps        Json?
+  attempts     Int          @default(0)
+  maxAttempts  Int          @default(3)
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  createdAt    DateTime     @default(now())
+  automation   AIAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  @@index([automationId, createdAt])
+}
+
+model AdminWorkspaceSettings {
+  id                   String   @id @default(cuid())
+  key                  String   @unique @default("singleton")
+  displayName          String   @default("Administrator")
+  email                String   @default("")
+  timezone             String   @default("UTC")
+  theme                String   @default("system")
+  notificationsEnabled Boolean  @default(true)
+  maintenanceMode      Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+
+model AIProviderEvent {
+  id           String   @id @default(cuid())
+  provider     String
+  purpose      String
+  operation    String
+  success      Boolean
+  statusCode   Int?
+  model        String?
+  error        String?
+  fallbackFrom String?
+  latencyMs    Int
+  createdAt    DateTime @default(now())
+  @@index([provider,createdAt])
+  @@index([success,createdAt])
+  @@index([purpose,createdAt])
+}
+  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   @@index([createdAt])
   agentLinks AIAgentKnowledge[]
