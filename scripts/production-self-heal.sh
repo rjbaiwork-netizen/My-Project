@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${RAILWAY_TOKEN:?RAILWAY_TOKEN is required}"
+: "${RAILWAY_API_TOKEN:-}${RAILWAY_TOKEN:-}"
 : "${RENDER_API_KEY:?RENDER_API_KEY is required}"
 : "${RAILWAY_PROJECT_ID:?RAILWAY_PROJECT_ID is required}"
 : "${RAILWAY_SERVICE_ID:?RAILWAY_SERVICE_ID is required}"
@@ -16,13 +16,11 @@ if [[ -n "${RAILWAY_API_TOKEN:-}" ]]; then
   echo "==> Using Railway API token for variable management"
 elif [[ -n "${RAILWAY_TOKEN:-}" ]]; then
   export RAILWAY_TOKEN
-  echo "==> Using Railway project token"
+  echo "==> Using Railway project token fallback"
 else
-  echo "ERROR: Set RAILWAY_API_TOKEN (recommended) or RAILWAY_TOKEN." >&2
+  echo "ERROR: Set RAILWAY_API_TOKEN or RAILWAY_TOKEN." >&2
   exit 1
 fi
-
-export RAILWAY_TOKEN
 
 npm install --global @railway/cli >/dev/null 2>&1
 
