@@ -72,6 +72,7 @@ model AIConversation {
   updatedAt DateTime     @updatedAt
   messages  AIMessage[]
   memories  AIMemory[]
+  agentLinks AIAgentMemory[]
 }
 
 model AIMessage {
@@ -95,6 +96,20 @@ model AIMemory {
   updatedAt      DateTime        @updatedAt
   conversation   AIConversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   @@index([namespace, createdAt])
+  agentLinks AIAgentMemory[]
+}
+
+model AIAgentMemory {
+  id String @id @default(cuid())
+  agentId String
+  memoryId String
+  categoryId String?
+  agent AIAgent @relation(fields:[agentId],references:[id],onDelete:Cascade)
+  memory AIMemory @relation(fields:[memoryId],references:[id],onDelete:Cascade)
+  category AIAgentBrainCategory? @relation(fields:[categoryId],references:[id],onDelete:SetNull)
+  createdAt DateTime @default(now())
+  @@unique([agentId,memoryId])
+  @@index([agentId,categoryId])
 }
 
 model AIKnowledgeDocument {
@@ -107,6 +122,20 @@ model AIKnowledgeDocument {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   @@index([createdAt])
+  agentLinks AIAgentKnowledge[]
+}
+
+model AIAgentKnowledge {
+  id String @id @default(cuid())
+  agentId String
+  knowledgeId String
+  categoryId String?
+  agent AIAgent @relation(fields:[agentId],references:[id],onDelete:Cascade)
+  knowledge AIKnowledgeDocument @relation(fields:[knowledgeId],references:[id],onDelete:Cascade)
+  category AIAgentBrainCategory? @relation(fields:[categoryId],references:[id],onDelete:SetNull)
+  createdAt DateTime @default(now())
+  @@unique([agentId,knowledgeId])
+  @@index([agentId,categoryId])
 }
 
 model AIAgentRun {
