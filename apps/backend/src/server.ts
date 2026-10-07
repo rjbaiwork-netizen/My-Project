@@ -18,3 +18,5 @@ const errorHandler:ErrorRequestHandler=(error,_req,res,_next)=>{console.error(er
 app.use(errorHandler);
 app.listen(port,"0.0.0.0",()=>{console.log(`Backend API listening on 0.0.0.0:${port}`);startAIWorker();});
 export default app;
+
+// Automation deployment recovery marker.
