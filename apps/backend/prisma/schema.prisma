@@ -61,6 +61,8 @@ model AIAgent {
   updatedAt   DateTime      @updatedAt
   runs        AIAgentRun[]
   jobs        AIJob[]
+  brainCategories AIAgentBrainCategory[]
+  automations AIAutomation[]
 }
 
 model AIConversation {
@@ -135,4 +137,73 @@ model AIJob {
   agent       AIAgent?     @relation(fields: [agentId], references: [id], onDelete: SetNull)
   @@index([status, scheduledAt])
   @@index([agentId, createdAt])
+}
+
+
+
+enum AIAutomationStatus {
+  ACTIVE
+  PAUSED
+  DRAFT
+}
+
+model AIAgentBrainCategory {
+  id          String   @id @default(cuid())
+  agentId     String
+  key         String
+  name        String
+  description String?
+  progress    Int      @default(0)
+  dataCount   Int      @default(0)
+  memoryCount Int      @default(0)
+  knowledgeCount Int    @default(0)
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+  agent       AIAgent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  metrics     AIBrainMetric[]
+  @@unique([agentId, key])
+  @@index([agentId, updatedAt])
+}
+
+model AIBrainMetric {
+  id         String   @id @default(cuid())
+  categoryId String
+  metricDate DateTime @default(now())
+  progress   Int
+  dataCount  Int      @default(0)
+  memoryCount Int     @default(0)
+  knowledgeCount Int  @default(0)
+  category   AIAgentBrainCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  @@index([categoryId, metricDate])
+}
+
+model AIAutomation {
+  id          String             @id @default(cuid())
+  name        String
+  description String?
+  status      AIAutomationStatus @default(DRAFT)
+  trigger     Json
+  conditions  Json?
+  actions     Json
+  agentId     String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  agent       AIAgent?           @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  runs        AIAutomationRun[]
+  @@index([status, updatedAt])
+  @@index([agentId, updatedAt])
+}
+
+model AIAutomationRun {
+  id           String       @id @default(cuid())
+  automationId String
+  status       AIJobStatus  @default(QUEUED)
+  input        Json?
+  output       Json?
+  error        String?
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  createdAt    DateTime     @default(now())
+  automation   AIAutomation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  @@index([automationId, createdAt])
 }
