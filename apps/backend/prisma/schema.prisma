@@ -48,6 +48,7 @@ enum AIJobStatus {
   SUCCEEDED
   FAILED
   CANCELLED
+  APPROVAL_REQUIRED
 }
 
 model AIAgent {
@@ -215,6 +216,7 @@ model AIAutomation {
   conditions  Json?
   actions     Json
   agentId     String?
+  approval    Json?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   agent       AIAgent?           @relation(fields: [agentId], references: [id], onDelete: SetNull)
@@ -230,6 +232,9 @@ model AIAutomationRun {
   input        Json?
   output       Json?
   error        String?
+  steps        Json?
+  attempts     Int          @default(0)
+  maxAttempts  Int          @default(3)
   startedAt    DateTime?
   finishedAt   DateTime?
   createdAt    DateTime     @default(now())
