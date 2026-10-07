@@ -38,30 +38,20 @@ jobs:
           DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
         run: npm run build:backend
 
-      - name: Validate deployment configuration
+      - name: Validate automation deployment configuration
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "${RAILWAY_TOKEN:-}" ]]; then
-            echo "ERROR: RAILWAY_TOKEN is required for this check." >&2
-            exit 1
-          fi
-          test -n "${RENDER_API_KEY}"
-          echo "✓ Required automation credentials are present"
+          test -n "${BACKEND_URL}"
+          test -n "${FRONTEND_URL}"
+          echo "✓ Automation live-test endpoints configured"
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
-          RENDER_API_KEY: ${{ secrets.RenderAPIKeys }}
-
-      - name: Railway -> Render secret synchronization + self-healing production QA
-        shell: bash
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RENDER_API_KEY: ${{ secrets.RenderAPIKeys }}
-          RAILWAY_PROJECT_ID: 828ab857-c542-4cc1-b1de-6cb1a7b155d5
-          RAILWAY_SERVICE_ID: 8d0e4be9-457d-4b49-b81d-3e375240559a
-          RAILWAY_ENVIRONMENT_ID: production
-          RENDER_SERVICE_ID: srv-db2e1dm0tbcc738tfkk0
           BACKEND_URL: https://my-project-production-9cd9.up.railway.app
           FRONTEND_URL: https://my-project-mk2x.onrender.com
-        run: bash scripts/production-self-heal.sh
+
+      - name: Automation Builder live E2E
+        shell: bash
+        env:
+          BACKEND_URL: https://my-project-production-9cd9.up.railway.app
+          FRONTEND_URL: https://my-project-mk2x.onrender.com
+        run: bash scripts/automation-e2e.sh
