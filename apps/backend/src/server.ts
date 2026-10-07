@@ -3,7 +3,8 @@ import cors from "cors";
 import express,{type ErrorRequestHandler} from "express";
 import adminRoutes from "./routes/adminRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
-import { startAIWorker } from "./workers/aiWorker.js";
+import { getAIWorkerStatus,startAIWorker } from "./workers/aiWorker.js";
+import { prisma } from "./lib/prisma.js";
 const app=express(),port=Number(process.env.PORT??4000);
 if(!Number.isInteger(port)||port<=0||port>65535)throw new Error("PORT must be a valid TCP port.");
 app.disable("x-powered-by");
@@ -11,6 +12,7 @@ app.use((req,res,next)=>{res.setHeader("X-Content-Type-Options","nosniff");res.s
 app.use(cors({origin:process.env.CORS_ORIGIN?.split(",").map(o=>o.trim())??true,credentials:true}));
 app.use(express.json({limit:"1mb"}));
 app.get("/health",(_req,res)=>res.json({success:true,status:"ok",automationEngineVersion:"2.0"}));
+app.get("/ready",async(_req,res)=>{try{await prisma.$queryRaw`SELECT 1`;const worker=getAIWorkerStatus();const ready=worker.started&&!worker.lastError;res.status(ready?200:503).json({success:ready,status:ready?"ready":"not_ready",automationEngineVersion:"2.0",database:"ready",worker});}catch(error){res.status(503).json({success:false,status:"not_ready",automationEngineVersion:"2.0",database:"unavailable",worker:getAIWorkerStatus(),error:error instanceof Error?error.message:"Database readiness check failed."});}});
 app.use("/api",adminRoutes);
 app.use("/api/ai",aiRoutes);
 app.use((_req,res)=>res.status(404).json({success:false,error:{message:"Route not found."}}));
