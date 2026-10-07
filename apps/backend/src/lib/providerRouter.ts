@@ -64,9 +64,7 @@ async function callOpenAIChat(p:ProviderDefinition,messages:{role:string;content
 }
 async function callGemini(p:ProviderDefinition,messages:{role:string;content:string}[],purpose:AIPurpose){
   const key=configuredKey(p,purpose)!;const model=p.models[purpose]!;
-  const system=messages.filter(m=>m.role==="system").map(m=>m.content).join("
-
-");
+  const system=messages.filter(m=>m.role==="system").map(m=>m.content).join("\n\n");
   const contents=messages.filter(m=>m.role!=="system").map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]}));
   const url=`${p.baseUrl}/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
   const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...(system?{systemInstruction:{parts:[{text:system}]}}:{}),contents})});
