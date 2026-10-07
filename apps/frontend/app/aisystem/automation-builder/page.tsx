@@ -10,6 +10,25 @@ const actions=["run-agent","create-task","generate-content","update-content","se
 type Agent={id:string;name:string};
 type Condition={field:string;operator:string;value:string};
 type Action={type:string;[key:string]:unknown};
+
+const scheduleTestGuide = [
+  {title:"1. Production Health Check", body:"GET /health এবং GET /ready যাচাই করুন। Expected: health=ok, ready=ready, database=ready, worker.started=true, worker.lastError=null. এগুলো PASS না হলে Schedule test শুরু করবেন না।"},
+  {title:"2. Interval Schedule", body:"SCHEDULE-E2E-TEST-INTERVAL নামে ACTIVE automation তৈরি করুন। Trigger: schedule → interval → intervalSeconds=60। Safe action দিন। 2–3 মিনিট observe করুন। অন্তত 2–3টি run QUEUED → RUNNING → SUCCEEDED হতে হবে; duplicate run হওয়া যাবে না।"},
+  {title:"3. Once Schedule", body:"SCHEDULE-E2E-TEST-ONCE তৈরি করুন। Trigger: schedule → once এবং বর্তমান সময়ের কয়েক মিনিট পরের at সেট করুন। নির্ধারিত সময়ে একটি run QUEUED → RUNNING → SUCCEEDED হবে এবং দ্বিতীয় run হবে না।"},
+  {title:"4. Daily Schedule", body:"SCHEDULE-E2E-TEST-DAILY তৈরি করুন। Trigger: schedule → daily এবং বর্তমান সময়ের কয়েক মিনিট পরের time দিন। নির্ধারিত সময়ে run সফল হবে; একই daily window-তে duplicate হবে না।"},
+  {title:"5. Weekly Schedule", body:"SCHEDULE-E2E-TEST-WEEKLY তৈরি করুন। Trigger: schedule → weekly, নির্ধারিত dayOfWeek ও test time দিন। সঠিক weekday/time-এ run হবে; ভুল সময়ে/duplicate run হবে না।"},
+  {title:"6. Monthly Schedule", body:"SCHEDULE-E2E-TEST-MONTHLY তৈরি করুন। Trigger: schedule → monthly, dayOfMonth ও test time দিন। নির্ধারিত দিনে একবার run হবে। 31-এর মতো day কম দিনের মাসে engine-এর intended handling verify করুন।"},
+  {title:"7. Schedule + Condition", body:"Daily/Interval schedule-এর সঙ্গে status == active condition দিন। active হলে action execute/SUCCESS; inactive হলে action skip করে run complete হবে।"},
+  {title:"8. Schedule + Approval", body:"Scheduled automation-এ approval required দিন। Expected: QUEUED → APPROVAL_REQUIRED। Approve করলে QUEUED → RUNNING → SUCCEEDED এবং approval ছাড়া action execute হবে না।"},
+  {title:"9. Schedule Failure + Retry", body:"Controlled safe failure তৈরি করুন। Expected: QUEUED → RUNNING → FAILED → Retry → RUNNING → SUCCESS। maxAttempts=3 হলে 3-এর বেশি attempt নয়; সব attempt fail হলে FAILED।"},
+  {title:"10. Duplicate Protection", body:"একই schedule event-এর জন্য worker tick একাধিক হলেও একটিই run তৈরি হচ্ছে কিনা verify করুন। Interval/Daily/Weekly/Monthly—সবগুলোর জন্য check করুন।"},
+  {title:"11. Worker Restart", body:"Backend worker restart/redeploy করার পর database থেকে automation state পুনরুদ্ধার হয়, existing run history থাকে এবং duplicate execution হয় না—verify করুন।"},
+  {title:"12. Run History", body:"GET /api/ai/automations/:id/runs দিয়ে id, status, input, output, steps, attempts, maxAttempts, createdAt, startedAt, finishedAt, error verify করুন।"},
+  {title:"13. Frontend Verification", body:"Automation Builder page refresh করে saved automation, schedule mode, run history, step status, error, Retry ও Approval controls সঠিকভাবে দেখা যাচ্ছে কিনা যাচাই করুন।"},
+  {title:"14. Final PASS Matrix", body:"Interval, Once, Daily, Weekly, Monthly, Condition, Approval, Retry, Duplicate Protection, Worker Restart, Run History এবং Frontend—সব PASS না হলে Schedule Engine-কে Production Verified বলা যাবে না।"},
+  {title:"Cleanup & Final Report", body:"শুধু SCHEDULE-E2E-TEST-* temporary automation শনাক্ত করে cleanup করুন। Existing production automation/data delete করবেন না। Final report: প্রতিটি test PASS/FAIL, Critical Issues, Fixed Issues, Remaining Issues, FINAL STATUS (PASS/PARTIAL PASS/FAIL)।"}
+];
+
 type Diagnosis={valid:boolean;issues:string[];fixes:string[];diagnosis:string};
 
 function localRepair(input:any,agentId:string){
@@ -159,6 +178,20 @@ export default function AutomationBuilder(){
         <p className="mt-2 text-xs text-slate-400">{diagnosis.diagnosis}</p>
         {!diagnosis.valid&&<button onClick={()=>setMessage("Manual intervention is required only for the unresolved field(s) shown above.")} className="mt-3 rounded-lg border border-amber-300/20 px-3 py-2 text-xs">Show Problem / Fix Manually</button>}
       </div>}
+    </section>
+
+    <section className="mt-6 rounded-2xl border border-amber-400/20 bg-amber-400/[.04] p-5">
+      <details>
+        <summary className="cursor-pointer list-none font-bold text-amber-200">📘 Schedule Full Production Test — Guide / Preview</summary>
+        <div className="mt-4 space-y-3">
+          <p className="text-sm text-slate-400">Interval, Once, Daily, Weekly এবং Monthly Schedule-এর live production test করার গাইড। এই অংশটি Builder-এর মধ্যেই reference হিসেবে রাখা হয়েছে।</p>
+          {scheduleTestGuide.map((item,i)=><details key={item.title} className="rounded-xl border border-white/10 bg-black/20 p-3">
+            <summary className="cursor-pointer font-semibold text-slate-200">{item.title}</summary>
+            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-400">{item.body}</p>
+          </details>)}
+          <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[.04] p-3 text-xs text-emerald-200">Final PASS: Interval ✓ Once ✓ Daily ✓ Weekly ✓ Monthly ✓ Condition ✓ Approval ✓ Retry ✓ Duplicate ✓ Worker Restart ✓ Run History ✓ Frontend ✓</div>
+        </div>
+      </details>
     </section>
 
     {message&&<div className="mt-5 rounded-xl border border-white/10 bg-white/[.05] p-4 text-sm text-slate-200">{message}</div>}
