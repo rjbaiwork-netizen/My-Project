@@ -1,27 +1,5 @@
 "use client";
 import MobileAppShell from "../../../../components/layout/MobileAppShell";
-
-const cards = [
-  ["Overview","এই workspace-এর প্রধান capability ও বর্তমান অবস্থা এক নজরে দেখুন।","Ready"],
-  ["Recent activity","সাম্প্রতিক activity, result এবং system updates এখানে দেখা যাবে।","Available"],
-  ["Quick action","এই capability থেকে প্রয়োজনীয় কাজ দ্রুত শুরু করুন।","Open"]
-];
-
-export default function Page() {
-  return (
-    <MobileAppShell theme="dark">
-      <main className="px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-xs font-bold uppercase tracking-[.18em] text-blue-400">AI System</p>
-          <div className="mt-2 flex items-start gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 text-xl" aria-hidden="true">📋</span>
-            <div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Project Management</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">Project status, tasks, deployment state এবং project-level AI assistance এক জায়গা থেকে পরিচালনা করুন।</p></div>
-          </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {cards.map(([label,text,status])=><section key={label} className="rounded-2xl border border-white/10 bg-white/[.05] p-5 shadow-xl shadow-black/10"><div className="flex items-center justify-between"><h2 className="font-bold">{label}</h2><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold text-emerald-300">{status}</span></div><p className="mt-3 text-sm leading-6 text-slate-400">{text}</p></section>)}
-          </div>
-        </div>
-      </main>
-    </MobileAppShell>
-  );
-}
+import {useEffect,useState} from "react";
+const api=()=>((process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,""));
+export default function Page(){const [jobs,setJobs]=useState<any[]>([]),[task,setTask]=useState("");async function load(){const r=await fetch(api()+"/api/ai/jobs");const d=await r.json();setJobs(d.data??[])}useEffect(()=>{void load()},[]);return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-4 py-8 text-white"><div className="mx-auto max-w-5xl"><p className="text-xs font-bold uppercase tracking-[.2em] text-blue-400">AI System / Project</p><h1 className="mt-2 text-3xl font-bold">Project Management</h1><p className="mt-3 text-slate-400">AI job queue-কে project task stream হিসেবে পরিচালনা করুন।</p><div className="mt-7 flex gap-2"><input value={task} onChange={e=>setTask(e.target.value)} placeholder="Task description" className="min-w-0 flex-1 rounded-xl bg-white/5 p-3"/><a href="/aisystem/jobs" className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-950">Open Jobs</a></div><div className="mt-6 space-y-2">{jobs.slice(0,30).map(j=><div key={j.id} className="flex justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-sm"><span>{j.type}</span><span className="text-slate-400">{j.status}</span></div>)}</div></div></main></MobileAppShell>}
