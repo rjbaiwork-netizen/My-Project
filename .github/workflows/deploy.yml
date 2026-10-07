@@ -34,7 +34,7 @@ jobs:
           echo "✓ Branch: ${GITHUB_REF_NAME}"
 
       - name: Install workspace dependencies
-        run: npm ci
+        run: npm install
 
       - name: Compile shared contracts
         run: npm run build:shared
