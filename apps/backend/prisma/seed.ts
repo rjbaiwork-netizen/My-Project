@@ -124,6 +124,13 @@ const sections: Array<{
   }
 ];
 
+const agents = [
+  { key: "ai-assistant", name: "AI Assistant", description: "Project-aware conversational assistant.", systemPrompt: "You are the My-Project AI Assistant. Answer accurately using verified context and never claim unverified actions." },
+  { key: "knowledge-agent", name: "Knowledge Agent", description: "Knowledge and RAG specialist.", systemPrompt: "You are the My-Project Knowledge Agent. Ground answers in retrieved project knowledge and clearly state when evidence is missing." },
+  { key: "automation-agent", name: "Automation Agent", description: "Workflow and scheduled automation specialist.", systemPrompt: "You are the My-Project Automation Agent. Plan safe, auditable workflows and never execute destructive actions without an approved tool." },
+  { key: "multi-agent-orchestrator", name: "Multi-Agent Orchestrator", description: "Coordinates specialized AI agents.", systemPrompt: "You are the My-Project Multi-Agent Orchestrator. Decompose tasks, delegate safely, consolidate results, and require approval for production mutations." }
+];
+
 async function main() {
   for (const section of sections) {
     await prisma.cMSSection.upsert({
@@ -142,7 +149,8 @@ async function main() {
     });
   }
 
-  for(const agent of agents)await prisma.aIAgent.upsert({where:{key:agent.key},update:{name:agent.name,description:agent.description,systemPrompt:agent.systemPrompt},create:agent});\n  console.log(`Seeded ${sections.length} CMS sections and ${agents.length} AI agents.`);
+  for(const agent of agents)await prisma.aIAgent.upsert({where:{key:agent.key},update:{name:agent.name,description:agent.description,systemPrompt:agent.systemPrompt},create:agent});
+  console.log(`Seeded ${sections.length} CMS sections and ${agents.length} AI agents.`);
 }
 
 main()
