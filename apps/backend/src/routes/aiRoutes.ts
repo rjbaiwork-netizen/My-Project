@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { addKnowledge, chat, createJob, listAgents, listJobs, listKnowledge } from "../controllers/aiController.js";
+const router=Router();
+router.post("/chat",chat);
+router.get("/agents",listAgents);
+router.get("/knowledge",listKnowledge);
+router.post("/knowledge",addKnowledge);
+router.get("/jobs",listJobs);
+router.post("/jobs",createJob);
+export default router;
