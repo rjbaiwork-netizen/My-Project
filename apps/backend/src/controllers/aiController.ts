@@ -153,7 +153,7 @@ export async function controlCenter(req:Request,res:Response){
     const [agents,automations,conversations,knowledge,memories]=await Promise.all([
       prisma.aIAgent.findMany({orderBy:{createdAt:"asc"}}),
       prisma.aIAutomation.findMany({orderBy:{updatedAt:"desc"},take:50}),
-      prisma.aIConversation.findMany({orderBy:{updatedAt:"desc"},take:20,_count:{select:{messages:true,memories:true}}}),
+      prisma.aIConversation.findMany({orderBy:{updatedAt:"desc"},take:20}),
       prisma.aIKnowledgeDocument.findMany({orderBy:{updatedAt:"desc"},take:20,select:{id:true,title:true,source:true,updatedAt:true,embedding:true}}),
       prisma.aIMemory.findMany({orderBy:{updatedAt:"desc"},take:20,select:{id:true,namespace:true,updatedAt:true,embedding:true}})
     ]);
