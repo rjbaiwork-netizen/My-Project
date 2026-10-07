@@ -13,19 +13,19 @@ jobs:
         env:
           API_BASE: https://my-project-production-9cd9.up.railway.app
         run: |
-          for i in {1..30}; do
+          for i in {1..36}; do
             if curl -fsS "$API_BASE/health" >/tmp/health.json; then
               echo "Backend healthy"
               cat /tmp/health.json
               exit 0
             fi
-            echo "Waiting for backend... attempt $i/30"
+            echo "Waiting for backend... attempt $i/36"
             sleep 10
           done
           echo "Backend did not become healthy"
           exit 1
 
-      - name: Run live Chat -> Conversation -> Memory E2E
+      - name: Run live AI Chat + Knowledge + Memory E2E
         env:
           API_BASE: https://my-project-production-9cd9.up.railway.app
         run: |
@@ -33,6 +33,7 @@ jobs:
 
           node <<'NODE'
           const base = process.env.API_BASE;
+          const ids = { conversations: [], memories: [], knowledge: [] };
 
           async function request(path, options = {}) {
             const res = await fetch(base + path, {
@@ -46,91 +47,163 @@ jobs:
             return body;
           }
 
-          const conversations = await request("/api/ai/conversations");
-          if (conversations.success !== true || !Array.isArray(conversations.data)) {
-            throw new Error("Conversation list contract failed");
+          async function cleanup() {
+            for (const id of ids.conversations) {
+              try { await request("/api/ai/conversations/" + id, { method: "DELETE" }); } catch {}
+            }
+            for (const id of ids.memories) {
+              try { await request("/api/ai/memories/" + id, { method: "DELETE" }); } catch {}
+            }
+            for (const id of ids.knowledge) {
+              try { await request("/api/ai/knowledge/" + id, { method: "DELETE" }); } catch {}
+            }
           }
 
-          const knowledge = await request("/api/ai/knowledge");
-          if (knowledge.success !== true || !Array.isArray(knowledge.data)) {
-            throw new Error("Knowledge list contract failed");
+          try {
+            const marker = "LIVE-E2E-" + Date.now();
+
+            const conversations = await request("/api/ai/conversations");
+            if (conversations.success !== true || !Array.isArray(conversations.data)) {
+              throw new Error("Conversation list contract failed");
+            }
+
+            const knowledge = await request("/api/ai/knowledge");
+            if (knowledge.success !== true || !Array.isArray(knowledge.data)) {
+              throw new Error("Knowledge list contract failed");
+            }
+
+            const knowledgeCreate = await request("/api/ai/knowledge", {
+              method: "POST",
+              body: JSON.stringify({
+                title: `Live E2E Knowledge ${marker}`,
+                content: `Verified knowledge phrase for ${marker}: My-Project AI core integration test.`,
+                source: "live-e2e"
+              })
+            });
+            const knowledgeId = knowledgeCreate.data?.id;
+            if (knowledgeCreate.success !== true || !knowledgeId || !knowledgeCreate.data?.embedding) {
+              throw new Error("Knowledge creation/indexing contract failed");
+            }
+            ids.knowledge.push(knowledgeId);
+
+            const knowledgeSearch = await request("/api/ai/knowledge/search?q=" + encodeURIComponent(marker));
+            if (knowledgeSearch.success !== true || !knowledgeSearch.data?.some(k => k.id === knowledgeId)) {
+              throw new Error("Knowledge semantic search contract failed");
+            }
+
+            const knowledgeUpdate = await request("/api/ai/knowledge/" + knowledgeId, {
+              method: "PATCH",
+              body: JSON.stringify({
+                content: `Updated verified knowledge phrase for ${marker}: integration update.`
+              })
+            });
+            if (knowledgeUpdate.success !== true || !knowledgeUpdate.data?.embedding) {
+              throw new Error("Knowledge update/re-index contract failed");
+            }
+
+            const manualMemory = await request("/api/ai/memories", {
+              method: "POST",
+              body: JSON.stringify({
+                content: `Manual memory verification phrase ${marker} should be retrievable.`,
+                namespace: "live-e2e"
+              })
+            });
+            const manualMemoryId = manualMemory.data?.id;
+            if (manualMemory.success !== true || !manualMemoryId || !manualMemory.data?.embedding) {
+              throw new Error("Manual memory creation/embedding contract failed");
+            }
+            ids.memories.push(manualMemoryId);
+
+            const memoryUpdate = await request("/api/ai/memories/" + manualMemoryId, {
+              method: "PATCH",
+              body: JSON.stringify({
+                content: `Updated manual memory verification phrase ${marker} remains retrievable.`
+              })
+            });
+            if (memoryUpdate.success !== true || !memoryUpdate.data?.embedding) {
+              throw new Error("Memory update/re-embedding contract failed");
+            }
+
+            const memorySearch = await request("/api/ai/memories/search?q=" + encodeURIComponent(marker));
+            if (memorySearch.success !== true || !memorySearch.data?.some(m => m.id === manualMemoryId)) {
+              throw new Error("Memory semantic search contract failed");
+            }
+
+            const chat = await request("/api/ai/chat", {
+              method: "POST",
+              body: JSON.stringify({
+                message: `Reply briefly and include this verification marker exactly: ${marker}`
+              })
+            });
+
+            if (chat.success !== true || !chat.data?.conversationId || !chat.data?.answer) {
+              throw new Error("Chat response contract failed");
+            }
+            ids.conversations.push(chat.data.conversationId);
+
+            if (!chat.data.answer.includes(marker)) {
+              throw new Error("AI response did not contain the verification marker");
+            }
+
+            if (!Array.isArray(chat.data.knowledge) || !Array.isArray(chat.data.memories)) {
+              throw new Error("Chat context contract failed");
+            }
+            if (!chat.data.knowledge.some(k => k.id === knowledgeId)) {
+              throw new Error("Chat did not retrieve the live knowledge document");
+            }
+            if (!chat.data.memories.some(m => m.id === manualMemoryId)) {
+              throw new Error("Chat did not retrieve the live manual memory");
+            }
+
+            const conversationId = chat.data.conversationId;
+            const followup = await request("/api/ai/chat", {
+              method: "POST",
+              body: JSON.stringify({
+                conversationId,
+                message: `Confirm the marker from our conversation: ${marker}`
+              })
+            });
+            if (followup.success !== true || followup.data?.conversationId !== conversationId) {
+              throw new Error("Conversation continuation contract failed");
+            }
+
+            const renamed = await request("/api/ai/conversations/" + conversationId, {
+              method: "PATCH",
+              body: JSON.stringify({ title: `E2E ${marker}` })
+            });
+            if (renamed.success !== true || renamed.data?.title !== `E2E ${marker}`) {
+              throw new Error("Conversation rename contract failed");
+            }
+
+            const conversation = await request("/api/ai/conversations/" + conversationId);
+            if (conversation.success !== true || !Array.isArray(conversation.data?.messages)) {
+              throw new Error("Conversation persistence contract failed");
+            }
+
+            const roles = conversation.data.messages.map(m => m.role);
+            if (!roles.includes("user") || !roles.includes("assistant") || conversation.data.messages.length < 4) {
+              throw new Error("Conversation does not contain expected persisted messages");
+            }
+
+            const memories = await request("/api/ai/memories");
+            if (memories.success !== true || !Array.isArray(memories.data)) {
+              throw new Error("Memory list contract failed");
+            }
+            if (!memories.data.some(m => m.conversationId === conversationId)) {
+              throw new Error("Conversation memory was not persisted");
+            }
+
+            console.log(JSON.stringify({
+              status: "PASS",
+              conversationId,
+              knowledgeId,
+              manualMemoryId,
+              knowledgeDocumentsAvailable: knowledge.data.length,
+              retrievedKnowledgeCount: chat.data.knowledge.length,
+              retrievedMemoryCount: chat.data.memories.length,
+              messageCount: conversation.data.messages.length
+            }, null, 2));
+          } finally {
+            await cleanup();
           }
-
-          const marker = "LIVE-E2E-" + Date.now();
-          const manualMemory = await request("/api/ai/memories", {
-            method: "POST",
-            body: JSON.stringify({
-              content: `Manual memory verification phrase ${marker} should be retrievable.`,
-              namespace: "live-e2e"
-            })
-          });
-          const manualMemoryId = manualMemory.data?.id;
-          if (manualMemory.success !== true || !manualMemoryId) {
-            throw new Error("Manual memory creation contract failed");
-          }
-
-          const chat = await request("/api/ai/chat", {
-            method: "POST",
-            body: JSON.stringify({
-              message: `Reply briefly and include this verification marker exactly: ${marker}`
-            })
-          });
-
-          if (chat.success !== true || !chat.data?.conversationId || !chat.data?.answer) {
-            throw new Error("Chat response contract failed");
-          }
-
-          if (!chat.data.answer.includes(marker)) {
-            throw new Error("AI response did not contain the verification marker");
-          }
-
-          const id = chat.data.conversationId;
-
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          const memoryProbe = await request("/api/ai/chat", {
-            method: "POST",
-            body: JSON.stringify({
-              message: `What verification phrase is stored in the live-e2e manual memory for marker ${marker}?`
-            })
-          });
-          if (memoryProbe.success !== true || !memoryProbe.data?.memories?.some(m => m.content.includes(marker))) {
-            throw new Error("Manual memory was not retrieved by chat context");
-          }
-
-          const conversation = await request("/api/ai/conversations/" + id);
-
-          if (conversation.success !== true || !Array.isArray(conversation.data?.messages)) {
-            throw new Error("Conversation persistence contract failed");
-          }
-
-          const roles = conversation.data.messages.map(m => m.role);
-          if (!roles.includes("user") || !roles.includes("assistant")) {
-            throw new Error("Conversation does not contain both user and assistant messages");
-          }
-
-          const memories = await request("/api/ai/memories");
-          if (memories.success !== true || !Array.isArray(memories.data)) {
-            throw new Error("Memory list contract failed");
-          }
-
-          const found = memories.data.some(m => m.conversationId === id && m.content.includes(marker));
-          if (!found) {
-            throw new Error("Conversation memory was not persisted");
-          }
-
-          if (!Array.isArray(chat.data.knowledge) || !Array.isArray(chat.data.memories)) {
-            throw new Error("Chat context contract failed");
-          }
-
-          await request("/api/ai/conversations/" + id, { method: "DELETE" });
-          await request("/api/ai/memories/" + manualMemoryId, { method: "DELETE" });
-
-          console.log(JSON.stringify({
-            status: "PASS",
-            conversationId: id,
-            knowledgeDocumentsAvailable: knowledge.data.length,
-            retrievedKnowledgeCount: chat.data.knowledge.length,
-            retrievedMemoryCount: chat.data.memories.length,
-            messageCount: conversation.data.messages.length
-          }, null, 2));
           NODE
