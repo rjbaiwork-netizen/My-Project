@@ -1,27 +1,6 @@
 "use client";
 import MobileAppShell from "../../../../components/layout/MobileAppShell";
-
-const cards = [
-  ["Overview","A clear, focused workspace for this capability.","Ready"],
-  ["Recent activity","Activity and results will appear here as the system is used.","Available"],
-  ["Quick action","Start working with this feature from the controls below.","Open"]
-];
-
-export default function Page() {
-  return (
-    <MobileAppShell theme="dark">
-      <main className="px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-xs font-bold uppercase tracking-[.18em] text-blue-400">AI System</p>
-          <div className="mt-2 flex items-start gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 text-xl">☷</span>
-            <div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Tasks</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">চলমান, অপেক্ষমাণ এবং সম্পন্ন AI task-এর অবস্থা দেখুন।</p></div>
-          </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {cards.map(([label,text,status])=><section key={label} className="rounded-2xl border border-white/10 bg-white/[.05] p-5 shadow-xl shadow-black/10"><div className="flex items-center justify-between"><h2 className="font-bold">{label}</h2><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold text-emerald-300">{status}</span></div><p className="mt-3 text-sm leading-6 text-slate-400">{text}</p></section>)}
-          </div>
-        </div>
-      </main>
-    </MobileAppShell>
-  );
-}
+import {useEffect,useState} from "react";
+const api=()=>((process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,""));
+export default function Page(){const [agents,setAgents]=useState<any[]>([]),[jobs,setJobs]=useState<any[]>([]),[agentId,setAgentId]=useState(""),[task,setTask]=useState("Run a safe AI task"),[busy,setBusy]=useState(false);async function load(){const [a,j]=await Promise.all([fetch(api()+"/api/ai/agents"),fetch(api()+"/api/ai/jobs")]);const ad=await a.json(),jd=await j.json();setAgents(ad.data??[]);setJobs(jd.data??[]);if(!agentId&&ad.data?.[0])setAgentId(ad.data[0].id)}useEffect(()=>{void load()},[]);
+async function queue(){setBusy(true);try{await fetch(api()+"/api/ai/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"agent-task",agentId,payload:{task}})});await load()}finally{setBusy(false)}}return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-4 py-8 text-white"><div className="mx-auto max-w-5xl"><p className="text-xs font-bold uppercase tracking-[.2em] text-blue-400">AI System / Jobs</p><h1 className="mt-2 text-3xl font-bold">AI Tasks</h1><div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5"><select value={agentId} onChange={e=>setAgentId(e.target.value)} className="w-full rounded-xl bg-slate-900 p-3">{agents.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select><textarea value={task} onChange={e=>setTask(e.target.value)} className="mt-3 min-h-24 w-full rounded-xl bg-black/20 p-3"/><button onClick={()=>void queue()} disabled={busy||!agentId} className="mt-3 rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950">{busy?"Queueing…":"Queue task"}</button></div><div className="mt-5 space-y-2">{jobs.map(j=><div key={j.id} className="flex justify-between rounded-xl border border-white/10 bg-white/5 p-4 text-sm"><span>{j.type}</span><span className="text-slate-400">{j.status}</span></div>)}</div></div></main></MobileAppShell>}
