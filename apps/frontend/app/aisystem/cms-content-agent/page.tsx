@@ -1,27 +1,7 @@
 "use client";
 import MobileAppShell from "../../../../components/layout/MobileAppShell";
-
-const cards = [
-  ["Overview","A clear, focused workspace for this capability.","Ready"],
-  ["Recent activity","Activity and results will appear here as the system is used.","Available"],
-  ["Quick action","Start working with this feature from the controls below.","Open"]
-];
-
-export default function Page() {
-  return (
-    <MobileAppShell theme="dark">
-      <main className="px-4 py-8 text-white sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-xs font-bold uppercase tracking-[.18em] text-blue-400">AI System</p>
-          <div className="mt-2 flex items-start gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 text-xl">✦</span>
-            <div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Content Assistant</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">Website content তৈরি, পর্যালোচনা ও উন্নত করতে AI ব্যবহার করুন।</p></div>
-          </div>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {cards.map(([label,text,status])=><section key={label} className="rounded-2xl border border-white/10 bg-white/[.05] p-5 shadow-xl shadow-black/10"><div className="flex items-center justify-between"><h2 className="font-bold">{label}</h2><span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold text-emerald-300">{status}</span></div><p className="mt-3 text-sm leading-6 text-slate-400">{text}</p></section>)}
-          </div>
-        </div>
-      </main>
-    </MobileAppShell>
-  );
-}
+import {useState} from "react";
+const api=()=>((process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,""));
+export default function Page(){const [message,setMessage]=useState("");const [answer,setAnswer]=useState("");const [busy,setBusy]=useState(false);
+async function ask(){setBusy(true);try{const r=await fetch(api()+"/api/ai/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:"Act as the My-Project CMS content agent. Help create or improve website content. Request: "+message})});const d=await r.json();if(!r.ok)throw Error(d?.error?.message??"AI request failed.");setAnswer(d.data?.answer??"");}finally{setBusy(false)}}
+return <MobileAppShell theme="dark"><main className="min-h-screen bg-slate-950 px-4 py-8 text-white"><div className="mx-auto max-w-4xl"><p className="text-xs font-bold uppercase tracking-[.2em] text-blue-400">AI System / CMS</p><h1 className="mt-2 text-3xl font-bold">Content Assistant</h1><textarea value={message} onChange={e=>setMessage(e.target.value)} placeholder="Ask the content agent to draft, rewrite or improve content…" className="mt-8 min-h-32 w-full rounded-2xl bg-white/5 p-4 ring-1 ring-white/10"/><button onClick={()=>void ask()} disabled={busy||!message.trim()} className="mt-3 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-950">{busy?"Thinking…":"Ask content agent"}</button>{answer&&<div className="mt-6 whitespace-pre-wrap rounded-2xl border border-white/10 bg-white/5 p-5 text-sm leading-7">{answer}</div>}</div></main></MobileAppShell>}
