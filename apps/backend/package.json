@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "prisma generate && tsx watch src/server.ts",
     "build": "prisma generate && npm run build --workspace=@my-project/shared && tsc",
-    "start": "tsx src/server.ts",
+    "start": "npm run db:migrate:deploy && npm run db:seed && tsx src/server.ts",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
