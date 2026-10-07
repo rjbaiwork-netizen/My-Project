@@ -10,7 +10,7 @@ app.disable("x-powered-by");
 app.use((req,res,next)=>{res.setHeader("X-Content-Type-Options","nosniff");res.setHeader("X-Frame-Options","DENY");res.setHeader("Referrer-Policy","strict-origin-when-cross-origin");res.setHeader("Permissions-Policy","camera=(), microphone=(), geolocation=()");next();});
 app.use(cors({origin:process.env.CORS_ORIGIN?.split(",").map(o=>o.trim())??true,credentials:true}));
 app.use(express.json({limit:"1mb"}));
-app.get("/health",(_req,res)=>res.json({success:true,status:"ok"}));
+app.get("/health",(_req,res)=>res.json({success:true,status:"ok",automationEngineVersion:"2.0"}));
 app.use("/api",adminRoutes);
 app.use("/api/ai",aiRoutes);
 app.use((_req,res)=>res.status(404).json({success:false,error:{message:"Route not found."}}));
