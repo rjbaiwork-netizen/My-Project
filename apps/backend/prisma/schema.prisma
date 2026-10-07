@@ -280,3 +280,31 @@ model AIProviderEvent {
 
 
 // provider credential lifecycle
+
+
+enum AIProviderConnectionStatus {
+  DISCONNECTED
+  AUTHORIZING
+  CONNECTED
+  ERROR
+  REVOKED
+}
+
+model AIProviderConnection {
+  id               String   @id @default(cuid())
+  providerId       String   @unique
+  displayName      String
+  authType         String
+  status           AIProviderConnectionStatus @default(DISCONNECTED)
+  scopes            Json?
+  capabilities     Json?
+  secretTargets    Json?
+  externalRef      String?
+  lastError        String?
+  connectedAt      DateTime?
+  lastValidatedAt  DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([status, updatedAt])
+}
