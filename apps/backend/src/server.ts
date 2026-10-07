@@ -3,6 +3,7 @@ import cors from "cors";
 import express,{type ErrorRequestHandler} from "express";
 import adminRoutes from "./routes/adminRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import providerIntegrationRoutes from "./routes/providerIntegrationRoutes.js";
 import { getAIWorkerStatus,startAIWorker } from "./workers/aiWorker.js";
 import { prisma } from "./lib/prisma.js";
 const app=express(),port=Number(process.env.PORT??4000);
@@ -15,6 +16,7 @@ app.get("/health",(_req,res)=>res.json({success:true,status:"ok",automationEngin
 app.get("/ready",async(_req,res)=>{try{await prisma.$queryRaw`SELECT 1`;const worker=getAIWorkerStatus();const ready=worker.started&&!worker.lastError;res.status(ready?200:503).json({success:ready,status:ready?"ready":"not_ready",automationEngineVersion:"2.0",database:"ready",worker});}catch(error){res.status(503).json({success:false,status:"not_ready",automationEngineVersion:"2.0",database:"unavailable",worker:getAIWorkerStatus(),error:error instanceof Error?error.message:"Database readiness check failed."});}});
 app.use("/api",adminRoutes);
 app.use("/api/ai",aiRoutes);
+app.use("/api/ai/provider-integrations",providerIntegrationRoutes);
 app.use((_req,res)=>res.status(404).json({success:false,error:{message:"Route not found."}}));
 const errorHandler:ErrorRequestHandler=(error,_req,res,_next)=>{console.error(error);if(error instanceof SyntaxError&&"body" in error)return void res.status(400).json({success:false,error:{message:"Invalid JSON payload."}});res.status(500).json({success:false,error:{message:"Internal server error."}});};
 app.use(errorHandler);

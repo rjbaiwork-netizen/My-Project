@@ -69,6 +69,16 @@ const providers: ProviderDefinition[] = [
     },
     capabilities: ["chat", "agent", "content", "embedding", "rag", "multimodal"], freeTier: true
   },
+  {
+    id: "openrouter", name: "OpenRouter", protocol: "openai-chat", keyEnv: "OPENROUTER_API_KEY",
+    baseUrl: "https://openrouter.ai/api/v1",
+    models: {
+      knowledge: process.env.OPENROUTER_KNOWLEDGE_MODEL ?? "openrouter/free",
+      agent: process.env.OPENROUTER_AGENT_MODEL ?? "openrouter/free",
+      production: process.env.OPENROUTER_PRODUCTION_MODEL ?? "openrouter/free"
+    },
+    capabilities: ["chat", "agent", "content"], freeTier: true
+  },
   ...loadOpenAICompatibleProviders()
 ];
 
@@ -102,7 +112,7 @@ function configuredKey(provider: ProviderDefinition, purpose: AIPurpose) {
 }
 
 function order() {
-  return [...new Set((process.env.AI_PROVIDER_ORDER ?? "openai,gemini,groq,mistral")
+  return [...new Set((process.env.AI_PROVIDER_ORDER ?? "openai,gemini,groq,mistral,openrouter")
     .split(",").map((x) => x.trim()).filter(Boolean))];
 }
 
