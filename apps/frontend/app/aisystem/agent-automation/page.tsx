@@ -7,7 +7,7 @@ const api=()=>((process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,""));
 
 type Category={id:string;key:string;name:string;progress:number;dataCount:number;memoryCount:number;knowledgeCount:number};
 type Agent={id:string;name:string;description:string;status:string;brainCategories:Category[];_count:{runs:number;jobs:number;automations:number}};
-type Automation={id:string;name:string;description?:string;status:string;agent?:{name:string}|null};
+type Automation={id:string;name:string;description?:string;status:string;agent?:{name:string}|null;runs?:Array<{status:string}>};
 
 export default function Page(){
   const [agents,setAgents]=useState<Agent[]>([]);
@@ -15,7 +15,7 @@ export default function Page(){
   const [selected,setSelected]=useState("");
   const [name,setName]=useState("");
   const [description,setDescription]=useState("");
-  const [busy,setBusy]=useState(false);
+  const [busy,setBusy]=useState(false);\n  const [runningId,setRunningId]=useState("");
   const [error,setError]=useState("");
 
   async function load(){
@@ -42,7 +42,7 @@ export default function Page(){
     }catch(e){setError(e instanceof Error?e.message:"Request failed");}finally{setBusy(false);}
   }
 
-  return <MobileAppShell theme="dark">
+  async function runAutomation(id:string){\n    setRunningId(id); setError("");\n    try{const r=await fetch(`${api()}/api/ai/automations/${id}/run`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({input:{source:"agent-automation-workspace"}})});const d=await r.json();if(!r.ok)throw Error(d?.error?.message??"Unable to queue automation.");await load();}catch(e){setError(e instanceof Error?e.message:"Unable to run automation.");}finally{setRunningId("");}\n  }\n\n  return <MobileAppShell theme="dark">
     <main className="min-h-screen bg-slate-950 px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
@@ -90,7 +90,7 @@ export default function Page(){
 
         <section className="mt-6 rounded-2xl border border-white/10 bg-white/[.05] p-6">
           <div className="flex items-center justify-between"><div><h2 className="text-xl font-bold">Automations</h2><p className="mt-1 text-sm text-slate-400">আপনার automation definitions-এর বর্তমান অবস্থা।</p></div><a href="/aisystem/automation" className="text-sm font-semibold text-blue-400">Open automation workspace →</a></div>
-          <div className="mt-5 grid gap-3 md:grid-cols-2">{automations.length?automations.map(a=><div key={a.id} className="rounded-xl border border-white/10 p-4"><div className="flex items-center justify-between"><p className="font-semibold">{a.name}</p><span className="text-xs text-emerald-300">{a.status}</span></div><p className="mt-1 text-xs text-slate-500">{a.agent?.name??"No agent assigned"}</p></div>):<p className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-slate-500">No automations yet.</p>}</div>
+          <div className="mt-5 grid gap-3 md:grid-cols-2">{automations.length?automations.map(a=><div key={a.id} className="rounded-xl border border-white/10 p-4"><div className="flex items-center justify-between gap-3"><div><p className="font-semibold">{a.name}</p><p className="mt-1 text-xs text-slate-500">{a.agent?.name??"No agent assigned"} · {a.runs?.length??0} recent runs</p></div><span className="text-xs text-emerald-300">{a.status}</span></div><button onClick={()=>void runAutomation(a.id)} disabled={runningId===a.id||a.status==="PAUSED"} className="mt-4 rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold hover:bg-white/10 disabled:opacity-50">{runningId===a.id?"Queueing…":"Run Automation"}</button></div>):<p className="rounded-xl border border-dashed border-white/10 p-6 text-sm text-slate-500">No automations yet.</p>}</div>
         </section>
       </div>
     </main>
