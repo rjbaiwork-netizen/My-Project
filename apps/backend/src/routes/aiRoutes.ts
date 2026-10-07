@@ -1,7 +1,15 @@
 import { Router } from "express";
 import { addKnowledge, chat, createJob, listAgents, getAgent, createAgent, updateAgent, listAgentRuns, listJobs, listKnowledge, orchestrate, runAgentRoute, agentAutomationOverview, createAutomation, updateAutomation, runAutomation, listAutomationRuns, approveAutomationRun, retryAutomationRun, diagnoseAutomation, brainProfile, linkKnowledgeToAgent, linkMemoryToAgent } from "../controllers/aiController.js";
+import { listConversations, getConversation, renameConversation, deleteConversation, listMemories, createMemory, deleteMemory } from "../controllers/aiContextController.js";
 const router=Router();
 router.post("/chat",chat);
+router.get("/conversations",listConversations);
+router.get("/conversations/:id",getConversation);
+router.patch("/conversations/:id",renameConversation);
+router.delete("/conversations/:id",deleteConversation);
+router.get("/memories",listMemories);
+router.post("/memories",createMemory);
+router.delete("/memories/:id",deleteMemory);
 router.get("/agents",listAgents);
 router.post("/agents",createAgent);
 router.get("/agents/:id",getAgent);
