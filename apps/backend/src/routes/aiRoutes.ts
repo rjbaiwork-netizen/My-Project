@@ -1,7 +1,14 @@
 import { Router } from "express";
 import { addKnowledge, chat, createJob, listAgents, getAgent, createAgent, updateAgent, listAgentRuns, listJobs, listKnowledge, orchestrate, runAgentRoute, agentAutomationOverview, createAutomation, updateAutomation, runAutomation, listAutomationRuns, approveAutomationRun, retryAutomationRun, diagnoseAutomation, brainProfile, linkKnowledgeToAgent, linkMemoryToAgent, runAgentChain, controlCenter } from "../controllers/aiController.js";
-import { reindexKnowledgeRoute } from "../controllers/aiController.js";\nimport { listAIProviders, listAIProviderEvents } from "../controllers/aiProviderController.js";\nimport { requireAdminAuth } from "../middleware/adminAuth.js";\nimport { listConversations, getConversation, renameConversation, deleteConversation, listMemories, createMemory, updateMemory, deleteMemory, searchMemories, updateKnowledge, deleteKnowledge, searchKnowledge } from "../controllers/aiContextController.js";
-const router=Router();\nrouter.use("/providers",requireAdminAuth);\nrouter.get("/providers",listAIProviders);\nrouter.get("/providers/events",listAIProviderEvents);\nrouter.post("/providers/reindex-knowledge",reindexKnowledgeRoute);
+import { reindexKnowledgeRoute } from "../controllers/aiController.js";
+import { listAIProviders, listAIProviderEvents } from "../controllers/aiProviderController.js";
+import { requireAdminAuth } from "../middleware/adminAuth.js";
+import { listConversations, getConversation, renameConversation, deleteConversation, listMemories, createMemory, updateMemory, deleteMemory, searchMemories, updateKnowledge, deleteKnowledge, searchKnowledge } from "../controllers/aiContextController.js";
+const router=Router();
+router.use("/providers",requireAdminAuth);
+router.get("/providers",listAIProviders);
+router.get("/providers/events",listAIProviderEvents);
+router.post("/providers/reindex-knowledge",reindexKnowledgeRoute);
 router.post("/chat",chat);
 router.get("/conversations",listConversations);
 router.get("/conversations/:id",getConversation);
