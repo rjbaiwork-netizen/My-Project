@@ -57,6 +57,18 @@ jobs:
           }
 
           const marker = "LIVE-E2E-" + Date.now();
+          const manualMemory = await request("/api/ai/memories", {
+            method: "POST",
+            body: JSON.stringify({
+              content: `Manual memory verification phrase ${marker} should be retrievable.`,
+              namespace: "live-e2e"
+            })
+          });
+          const manualMemoryId = manualMemory.data?.id;
+          if (manualMemory.success !== true || !manualMemoryId) {
+            throw new Error("Manual memory creation contract failed");
+          }
+
           const chat = await request("/api/ai/chat", {
             method: "POST",
             body: JSON.stringify({
@@ -73,6 +85,18 @@ jobs:
           }
 
           const id = chat.data.conversationId;
+
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          const memoryProbe = await request("/api/ai/chat", {
+            method: "POST",
+            body: JSON.stringify({
+              message: `What verification phrase is stored in the live-e2e manual memory for marker ${marker}?`
+            })
+          });
+          if (memoryProbe.success !== true || !memoryProbe.data?.memories?.some(m => m.content.includes(marker))) {
+            throw new Error("Manual memory was not retrieved by chat context");
+          }
+
           const conversation = await request("/api/ai/conversations/" + id);
 
           if (conversation.success !== true || !Array.isArray(conversation.data?.messages)) {
@@ -99,6 +123,7 @@ jobs:
           }
 
           await request("/api/ai/conversations/" + id, { method: "DELETE" });
+          await request("/api/ai/memories/" + manualMemoryId, { method: "DELETE" });
 
           console.log(JSON.stringify({
             status: "PASS",
