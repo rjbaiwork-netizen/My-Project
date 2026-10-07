@@ -72,6 +72,47 @@ jobs:
           echo "==> Push to main triggers the Render deployment automatically."
           echo "✓ Render deployment handoff complete."
 
+      - name: Sync admin proxy secret to Render
+        shell: bash
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RENDER_API_KEY: ${{ secrets.RenderAPIKeys }}
+          RAILWAY_PROJECT_ID: 828ab857-c542-4cc1-b1de-6cb1a7b155d5
+          RAILWAY_SERVICE_ID: 8d0e4be9-457d-4b49-b81d-3e375240559a
+          RAILWAY_ENVIRONMENT_ID: production
+          RENDER_SERVICE_ID: srv-db2e1dm0tbcc738tfkk0
+        run: |
+          set -euo pipefail
+
+          npm install --global @railway/cli
+
+          RAILWAY_VARS="$(railway variable list --project "${RAILWAY_PROJECT_ID}" --service "${RAILWAY_SERVICE_ID}" --environment "${RAILWAY_ENVIRONMENT_ID}" --json)"
+          ADMIN_TOKEN="$(python -c 'import json,sys; d=json.load(sys.stdin); v=d.get("variables",d); print(v["ADMIN_API_TOKEN"])' <<<"${RAILWAY_VARS}")"
+
+          if [ -z "${ADMIN_TOKEN}" ]; then
+            echo "ADMIN_API_TOKEN was not returned by Railway."
+            exit 1
+          fi
+
+          echo "::add-mask::${ADMIN_TOKEN}"
+
+          curl --fail-with-body --silent --show-error --request PUT \
+            --url "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/env-vars/ADMIN_API_TOKEN" \
+            --header "accept: application/json" \
+            --header "content-type: application/json" \
+            --header "authorization: Bearer ${RENDER_API_KEY}" \
+            --data "$(python -c 'import json,os; print(json.dumps({"value":os.environ["ADMIN_TOKEN"]}))')"
+
+          curl --fail-with-body --silent --show-error --request POST \
+            --url "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+            --header "accept: application/json" \
+            --header "content-type: application/json" \
+            --header "authorization: Bearer ${RENDER_API_KEY}" \
+            --data '{"clearCache":"do_not_clear","deployMode":"build_and_deploy"}'
+
+          echo "✓ ADMIN_API_TOKEN synchronized from Railway to Render."
+          echo "✓ Render deployment triggered with the synchronized secret."
+
       - name: Production smoke tests
         shell: bash
         env:
