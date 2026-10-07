@@ -14,7 +14,7 @@ export default function Page() {
         <div className="mx-auto max-w-6xl">
           <p className="text-xs font-bold uppercase tracking-[.18em] text-blue-400">AI System</p>
           <div className="mt-2 flex items-start gap-4">
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 text-xl">{icon}</span>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 text-xl">✓</span>
             <div><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Approvals</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">AI-এর গুরুত্বপূর্ণ পরিবর্তন review করে অনুমোদন করুন।</p></div>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
