@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import MobileAppShell from "../../components/layout/MobileAppShell";
 
 const quickActions = [
   ["AI Chat", "Start a conversation", "/aisystem/chat-interface"],
@@ -19,6 +20,7 @@ const activity = [
 
 export default function Dashboard() {
   return (
+    <MobileAppShell theme="light">
     <main className="mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
       <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
@@ -86,5 +88,6 @@ export default function Dashboard() {
         </div>
       </section>
     </main>
+    </MobileAppShell>
   );
 }
