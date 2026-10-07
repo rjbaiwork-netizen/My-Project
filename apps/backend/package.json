@@ -12,8 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio",
-    "db:migrate:recover": "prisma migrate resolve --applied 20261007120000_add_ai_system || true && prisma migrate deploy"
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
