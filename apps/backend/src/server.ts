@@ -18,7 +18,7 @@ async function runScheduleSmokeTest(){
   {name:"__SMOKE_WEEKLY__",trigger:{type:"schedule",mode:"weekly",dayOfWeek:day,time:`${hh}:${mm}`}},
   {name:"__SMOKE_MONTHLY__",trigger:{type:"schedule",mode:"monthly",dayOfMonth:date,time:`${hh}:${mm}`}}
  ];
- const created=[];
+ const created:Array<{id:string;name:string}>=[];
  for(const s of specs){created.push(await prisma.aIAutomation.create({data:{name:s.name,description:"temporary production scheduler smoke test",status:"ACTIVE",trigger:s.trigger,conditions:[],actions:[{type:"send-notification",message:s.name}],approval:{required:false}}}));}
  console.log("[SCHEDULE_E2E] created="+created.map(x=>x.name).join(","));
  setTimeout(async()=>{try{const runs=await prisma.aIAutomationRun.findMany({where:{automationId:{in:created.map(x=>x.id)}},orderBy:{createdAt:"asc"},select:{status:true,automationId:true,error:true,finishedAt:true}});const summary=created.map(a=>({name:a.name,runs:runs.filter(r=>r.automationId===a.id).map(r=>({status:r.status,error:r.error}))}));console.log("[SCHEDULE_E2E] results="+JSON.stringify(summary));await prisma.aIAutomation.deleteMany({where:{id:{in:created.map(x=>x.id)}}});console.log("[SCHEDULE_E2E] cleanup=SUCCESS");}catch(error){console.error("[SCHEDULE_E2E] failed "+(error instanceof Error?error.message:String(error)));}},50000);
