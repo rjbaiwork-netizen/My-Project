@@ -169,7 +169,8 @@ export async function startAIWorker(intervalMs=15000){
         }
       }
 
-      const scheduled=await prisma.aIAutomation.findMany({where:{status:"ACTIVE",trigger:{path:["type"],equals:"schedule"}},take:50});
+      const activeAutomations=await prisma.aIAutomation.findMany({where:{status:"ACTIVE"},take:100});
+      const scheduled=activeAutomations.filter((automation)=>{const trigger=(automation.trigger??{}) as JsonRecord;return String(trigger.type??"").toLowerCase()==="schedule";});
       for(const automation of scheduled){
         const trigger=(automation.trigger??{}) as JsonRecord;
         const mode=String(trigger.mode??"interval").toLowerCase();
