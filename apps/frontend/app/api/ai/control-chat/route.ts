@@ -29,8 +29,17 @@ export async function POST(req:NextRequest){
    cache:"no-store"
   });
  }
- return new NextResponse(await response.text(),{
+ const raw=await response.text();
+ let payload:any;
+ try{payload=raw?JSON.parse(raw):{};}catch{
+  payload={success:false,error:{message:`Backend returned a non-JSON response (HTTP ${response.status}).`,status:response.status}};
+ }
+ return NextResponse.json(payload,{
   status:response.status,
-  headers:{"Content-Type":response.headers.get("content-type")??"application/json","Cache-Control":"no-store"}
+  headers:{
+   "Cache-Control":"no-store, no-cache, must-revalidate",
+   "X-AI-Control-Proxy":"1",
+   "X-AI-Control-Backend-Status":String(response.status)
+  }
  });
 }
