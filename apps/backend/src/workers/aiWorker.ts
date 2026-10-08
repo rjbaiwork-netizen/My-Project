@@ -183,7 +183,7 @@ export async function startAIWorker(intervalMs=15000){
           const at=Date.parse(String(trigger.at??""));
           due=Number.isFinite(at)&&at<=Date.now()&&!last;
         } else if(mode==="daily"||mode==="weekly"||mode==="monthly"){
-          const at=String(trigger.time??"09:00").match(/^(\\d{1,2}):(\\d{2})$/);
+          const at=String(trigger.time??"09:00").match(/^(\d{1,2}):(\d{2})$/);
           if(at){
             const now=new Date(), candidate=new Date(now);
             candidate.setHours(Number(at[1]),Number(at[2]),0,0);
