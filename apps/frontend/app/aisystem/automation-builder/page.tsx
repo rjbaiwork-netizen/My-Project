@@ -189,7 +189,7 @@ export default function AutomationBuilder(){
             <summary className="cursor-pointer font-semibold text-slate-200">{item.title}</summary>
             <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-400">{item.body}</p>
           </details>)}
-          <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[.04] p-3 text-xs text-emerald-200">Final PASS: Interval ✓ Once ✓ Daily ✓ Weekly ✓ Monthly ✓ Condition ✓ Approval ✓ Retry ✓ Duplicate ✓ Worker Restart ✓ Run History ✓ Frontend ✓</div>
+          <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[.04] p-3 text-xs text-emerald-200">Production verification checklist: Interval · Once · Daily · Weekly · Monthly · Condition · Approval · Retry · Duplicate · Worker Restart · Run History · Frontend</div>
         </div>
       </details>
     </section>
