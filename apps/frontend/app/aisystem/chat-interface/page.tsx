@@ -11,7 +11,7 @@ type Agent={id:string;name:string;status:string};
 async function readJson(r:Response){
   const text=await r.text();
   let data:any={};
-  try{data=text?JSON.parse(text):{};}catch{throw Error(`Server returned an invalid response (HTTP ${r.status}).`);}
+  try{data=text?JSON.parse(text):{};}catch{throw Error(`Server returned a non-JSON response (HTTP ${r.status}).`);}
   if(!r.ok)throw Error(data?.error?.message??`Request failed (HTTP ${r.status}).`);
   return data;
 }
