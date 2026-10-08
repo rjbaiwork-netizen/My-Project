@@ -4,7 +4,7 @@ export type ProviderIntegrationSpec={
  secretKeys:string[]; capabilities:string[]; automatedKeyCreation:boolean;
 };
 export const PROVIDER_INTEGRATIONS:ProviderIntegrationSpec[]=[
- {id:"gemini",name:"Google Gemini",mode:"oauth",authUrl:"https://accounts.google.com/o/oauth2/v2/auth",docsUrl:"https://ai.google.dev/gemini-api/docs/oauth",secretKeys:["GEMINI_API_KEY"],capabilities:["chat","agent","content","embedding","rag","multimodal"],automatedKeyCreation:false},
+ {id:"gemini",name:"Google Gemini",mode:"manual",docsUrl:"https://ai.google.dev/gemini-api/docs/api-key",secretKeys:["GEMINI_API_KEY"],capabilities:["chat","agent","content","embedding","rag","multimodal"],automatedKeyCreation:false},
  {id:"groq",name:"Groq",mode:"manual",docsUrl:"https://console.groq.com/keys",secretKeys:["GROQ_API_KEY"],capabilities:["chat","agent","content"],automatedKeyCreation:false},
  {id:"mistral",name:"Mistral",mode:"manual",docsUrl:"https://console.mistral.ai/api-keys",secretKeys:["MISTRAL_API_KEY"],capabilities:["chat","agent","content","embedding","rag"],automatedKeyCreation:false},
  {id:"openrouter",name:"OpenRouter",mode:"api-key-management",docsUrl:"https://openrouter.ai/docs/api/api-reference/api-keys/create-keys",secretKeys:["OPENROUTER_API_KEY"],capabilities:["chat","agent","content"],automatedKeyCreation:true},
