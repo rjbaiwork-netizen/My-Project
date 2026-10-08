@@ -56,7 +56,7 @@ export default function AIChatInterfacePage(){
       const control=await readJson(controlResponse);
       if(control.data?.mode==="action_preview"){
         setPendingControl({message:value,action:control.data.action});
-        setMessages(m=>[...m,{id:`u-${Date.now()}`,role:"user",content:value,createdAt:new Date().toISOString()},{id:`p-${Date.now()+1}`,role:"assistant",content:`আমি এই actionটি করতে প্রস্তুত: ${JSON.stringify(control.data.action,null,2)}\\n\\nConfirm চাপলে এটি execute হবে.`,createdAt:new Date().toISOString()}]);
+        setMessages(m=>[...m,{id:`u-${Date.now()}`,role:"user",content:value,createdAt:new Date().toISOString()},{id:`p-${Date.now()+1}`,role:"assistant",content:`আমি এই actionটি করতে প্রস্তুত: ${JSON.stringify(control.data.action,null,2)}\n\nConfirm চাপলে এটি execute হবে.`,createdAt:new Date().toISOString()}]);
         setMessage(""); return;
       }
       if(control.data?.mode==="executed"){
