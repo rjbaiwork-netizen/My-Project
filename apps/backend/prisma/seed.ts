@@ -137,7 +137,8 @@ async function main() {
       where: { key: section.key },
       update: {
         title: section.title,
-        order: section.order
+        order: section.order,
+        isVisible: true
       },
       create: {
         key: section.key,
