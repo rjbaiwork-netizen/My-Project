@@ -5,7 +5,8 @@ import {secretIntegrationStatus,syncSecret} from "../lib/secretManager.js";
 import {randomUUID} from "node:crypto";
 export async function listIntegrations(_req:Request,res:Response){
  const connections=await prisma.aIProviderConnection.findMany({orderBy:{providerId:"asc"}});
- res.json({success:true,data:{providers:PROVIDER_INTEGRATIONS.map(p=>{const c=connections.find(x=>x.providerId===p.id);return {...p,connected:Boolean(c&&c.status==="CONNECTED"),status:c?.status??"DISCONNECTED",lastError:c?.lastError??null,connectedAt:c?.connectedAt??null};}),secretTargets:secretIntegrationStatus()}});
+ const configured=(p:any)=>Boolean(process.env[p.secretKeys[0]] || (p.id==="gemini" && process.env["Gemini key"]));
+ res.json({success:true,data:{providers:PROVIDER_INTEGRATIONS.map(p=>{const c=connections.find(x=>x.providerId===p.id);const liveConfigured=configured(p);return {...p,connected:Boolean((c&&c.status==="CONNECTED")||liveConfigured),status:((c&&c.status==="CONNECTED")||liveConfigured)?"CONNECTED":c?.status??"DISCONNECTED",lastError:c?.lastError??null,connectedAt:c?.connectedAt??null};}),secretTargets:secretIntegrationStatus()}});
 }
 export async function beginIntegration(req:Request,res:Response){
  const providerId=String(req.params.providerId),spec=getIntegrationSpec(providerId);
