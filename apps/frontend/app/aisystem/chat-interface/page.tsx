@@ -38,7 +38,22 @@ export default function AIChatInterfacePage(){
     const value=(controlMessage??message).trim();if(!value||loading)return;
     setLoading(true);setError("");
     try{
-      const control=await readJson(await fetch("/api/ai/control-chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message:value,confirm})}));
+      let controlResponse=await fetch("/api/ai/control-chat",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({message:value,confirm}),
+        cache:"no-store"
+      });
+      if((controlResponse.status===404||controlResponse.status===502||controlResponse.status===503||controlResponse.status===504)&&!confirm){
+        await new Promise(resolve=>setTimeout(resolve,600));
+        controlResponse=await fetch("/api/ai/control-chat",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({message:value,confirm}),
+          cache:"no-store"
+        });
+      }
+      const control=await readJson(controlResponse);
       if(control.data?.mode==="action_preview"){
         setPendingControl({message:value,action:control.data.action});
         setMessages(m=>[...m,{id:`u-${Date.now()}`,role:"user",content:value,createdAt:new Date().toISOString()},{id:`p-${Date.now()+1}`,role:"assistant",content:`আমি এই actionটি করতে প্রস্তুত: ${JSON.stringify(control.data.action,null,2)}\\n\\nConfirm চাপলে এটি execute হবে.`,createdAt:new Date().toISOString()}]);
