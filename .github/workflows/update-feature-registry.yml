@@ -1,0 +1,84 @@
+name: Update Admin Feature Registry
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "apps/frontend/app/api/admin/feature-registry/registry.json"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: feature-registry-main
+  cancel-in-progress: false
+
+jobs:
+  append-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Append commit to registry
+        env:
+          EVENT_PATH: ${{ github.event_path }}
+          COMMIT_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = 'apps/frontend/app/api/admin/feature-registry/registry.json';
+          const event = JSON.parse(fs.readFileSync(process.env.EVENT_PATH, 'utf8'));
+          const registry = JSON.parse(fs.readFileSync(path, 'utf8'));
+          const sha = process.env.COMMIT_SHA;
+          if ((registry.updates || []).some((item) => item.commit === sha)) {
+            console.log('Commit already recorded; no changes needed.');
+            process.exit(0);
+          }
+          const head = (event.head_commit || {});
+          const message = String(head.message || 'Update on main').split('\n')[0];
+          const title = message.replace(/^(feat|feature|fix|chore|docs|refactor|perf|test|ci)(\([^)]*\))?:\s*/i, '');
+          const date = head.timestamp || new Date().toISOString();
+          const files = Array.isArray(head.added) ? head.added : [];
+          const changedFiles = [...new Set([...(head.added || []), ...(head.modified || []), ...(head.removed || [])])];
+          const featureCommit = /^(feat|feature)(\([^)]*\))?:/i.test(message);
+          const update = {
+            id: sha,
+            commit: sha,
+            title: message,
+            date,
+            url: `https://github.com/${process.env.REPOSITORY}/commit/${sha}`,
+            features: featureCommit ? [title || message] : [],
+            changedFiles,
+            deploymentStatus: 'GitHub commit recorded; deployment must be verified separately'
+          };
+          registry.updates = [update, ...(registry.updates || [])].slice(0, 200);
+          if (featureCommit) {
+            const featureId = sha.slice(0, 12);
+            if (!(registry.features || []).some((item) => item.id === featureId)) {
+              registry.features = registry.features || [];
+              registry.features.unshift({
+                id: featureId,
+                name: title || message,
+                description: `Added by main-branch commit ${sha.slice(0, 7)}. See update history for changed files and deployment status.`,
+                source: 'GitHub main commit',
+                commit: sha,
+                addedAt: date
+              });
+            }
+          }
+          fs.writeFileSync(path, JSON.stringify(registry, null, 2) + '\n');
+          NODE
+      - name: Commit registry changes
+        run: |
+          if git diff --quiet -- apps/frontend/app/api/admin/feature-registry/registry.json; then
+            echo "Registry already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/frontend/app/api/admin/feature-registry/registry.json
+          git commit -m "chore: append main update to feature registry [skip ci]"
+          git push

@@ -6,6 +6,9 @@ import { useCallback, useEffect, useState } from "react";
 type Status = "healthy" | "degraded" | "unreachable" | "unknown" | "available" | "unavailable" | "not_connected";
 type Deployment = { id?: string; status?: string; createdAt?: string; finishedAt?: string; updatedAt?: string; commit?: string; message?: string; branch?: string; url?: string };
 type Integration = { status: Status; note: string; deployments?: Deployment[]; recentErrors?: Deployment[]; checkedAt?: string };
+type RegistryFeature = { id: string; name: string; description: string; source?: string; addedAt?: string; commit?: string };
+type RegistryUpdate = { id: string; commit?: string; title: string; date: string; url?: string; features?: string[]; changedFiles?: string[]; deploymentStatus?: string };
+type RegistryPayload = { features: RegistryFeature[]; updates: RegistryUpdate[] };
 type MonitorData = {
   success: boolean;
   checkedAt: string;
@@ -55,6 +58,8 @@ export default function AdminMonitoringPage() {
   const [error, setError] = useState("");
   const [monitorToken, setMonitorToken] = useState("");
   const [tokenInput, setTokenInput] = useState("");
+  const [registryData, setRegistryData] = useState<RegistryPayload | null>(null);
+  const [registryError, setRegistryError] = useState("");
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
@@ -78,6 +83,34 @@ export default function AdminMonitoringPage() {
     const timer = window.setInterval(() => void load(), 15000);
     return () => window.clearInterval(timer);
   }, [load, monitorToken]);
+
+  useEffect(() => {
+    if (!monitorToken) {
+      setRegistryData(null);
+      setRegistryError("");
+      return;
+    }
+    let cancelled = false;
+    const loadRegistry = async () => {
+      try {
+        const response = await fetch("/api/admin/feature-registry", {
+          cache: "no-store",
+          headers: { Authorization: `Bearer ${monitorToken}` }
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload?.success) throw new Error(payload?.error?.message ?? "Unable to load feature registry.");
+        if (!cancelled) {
+          setRegistryData(payload.registry as RegistryPayload);
+          setRegistryError("");
+        }
+      } catch (e) {
+        if (!cancelled) setRegistryError(e instanceof Error ? e.message : "Feature registry request failed.");
+      }
+    };
+    void loadRegistry();
+    const timer = window.setInterval(() => void loadRegistry(), 15000);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [monitorToken]);
 
   const latest = data?.github?.latestCommit;
   const worker = data?.readiness?.details?.workerStarted === true && data?.readiness?.details?.workerHasError !== true;
@@ -164,6 +197,65 @@ export default function AdminMonitoringPage() {
             <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">Recent deployment errors</h2><StatusBadge status={recentErrors.length ? "degraded" : render?.status === "not_connected" || railway?.status === "not_connected" ? "unknown" : "healthy"} /></div>
             {recentErrors.length ? <div className="mt-3 space-y-2">{recentErrors.map((item, index) => <div key={item.id ?? index} className="rounded-lg border border-rose-100 bg-rose-50 p-3"><p className="text-sm font-semibold text-rose-800">{item.status} · {item.message ?? item.id ?? "Deployment error"}</p><p className="mt-1 text-xs text-rose-700">{item.createdAt ? new Date(item.createdAt).toLocaleString() : "Timestamp unavailable"}</p></div>)}</div> : <p className="mt-2 text-sm text-slate-500">No failed deployment is present in the currently retrieved records. This does not replace platform log inspection.</p>}
             <p className="mt-4 text-xs leading-5 text-slate-500">To enable platform deployment history, configure RENDER_API_KEY and either RAILWAY_PROJECT_TOKEN or RAILWAY_API_TOKEN as server-side environment variables on the Render frontend service. Never place these tokens in browser code or GitHub source files.</p>
+          </section>
+
+          <section className="mt-6">
+            <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Project Change Ledger</p>
+                <h2 className="mt-1 text-xl font-bold">Feature Registry & Update History</h2>
+                <p className="mt-1 text-sm text-slate-500">Feature inventory and append-only history from GitHub main commits.</p>
+              </div>
+              <span className="text-xs text-slate-500">{registryData ? `${registryData.features.length} features · ${registryData.updates.length} updates` : "Waiting for registry"}</span>
+            </div>
+            {registryError && <div role="alert" className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{registryError}</div>}
+            <div className="grid items-start gap-4 lg:grid-cols-2">
+              <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-bold">Existing Features</h3>
+                  <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">{registryData?.features.length ?? 0} tracked</span>
+                </div>
+                <p className="mt-1 text-sm text-slate-500">এ পর্যন্ত রেজিস্ট্রিতে নথিভুক্ত ফিচার। নতুন feature-ধরনের main commit হলে workflow তালিকায় নতুন এন্ট্রি যোগ করবে।</p>
+                <div className="mt-4 space-y-3">
+                  {registryData?.features.map((feature) => (
+                    <div key={feature.id} className="rounded-xl border border-slate-100 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-900">{feature.name}</p>
+                        <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">{feature.source ?? "GitHub"}</span>
+                      </div>
+                      <p className="mt-1 text-sm leading-5 text-slate-600">{feature.description}</p>
+                      {feature.commit && <a href={`https://github.com/rjbaiwork-netizen/My-Project/commit/${feature.commit}`} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-semibold text-blue-700 hover:underline">View source commit ↗</a>}
+                    </div>
+                  ))}
+                  {!registryData?.features.length && <p className="text-sm text-slate-500">Feature list is not available yet.</p>}
+                </div>
+              </article>
+
+              <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-bold">Update History</h3>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">Newest first</span>
+                </div>
+                <p className="mt-1 text-sm text-slate-500">প্রতিটি main-branch commit-এর রেকর্ড; পুরোনো রেকর্ড রেখে নতুনটি উপরে যোগ হবে।</p>
+                <div className="mt-4 space-y-3">
+                  {registryData?.updates.map((update) => (
+                    <div key={update.id} className="rounded-xl border border-slate-100 p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-900">{update.title}</p>
+                        <span className="text-[11px] text-slate-500">{update.date ? new Date(update.date).toLocaleString() : "Date unavailable"}</span>
+                      </div>
+                      {update.commit && <p className="mt-1 font-mono text-[11px] text-slate-400">{update.commit.slice(0, 7)}</p>}
+                      {!!update.features?.length && <div className="mt-2 flex flex-wrap gap-1.5">{update.features.map((feature) => <span key={feature} className="rounded-full bg-blue-50 px-2 py-1 text-[11px] font-medium text-blue-800">{feature}</span>)}</div>}
+                      {!!update.changedFiles?.length && <details className="mt-2"><summary className="cursor-pointer text-xs font-semibold text-slate-600">Changed files ({update.changedFiles.length})</summary><ul className="mt-2 space-y-1 pl-4 text-xs text-slate-500">{update.changedFiles.map((file) => <li key={file} className="list-disc break-all">{file}</li>)}</ul></details>}
+                      <p className="mt-2 text-xs leading-5 text-slate-500">Deployment: {update.deploymentStatus ?? "Not verified"}</p>
+                      {update.url && <a href={update.url} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs font-semibold text-blue-700 hover:underline">Open GitHub commit ↗</a>}
+                    </div>
+                  ))}
+                  {!registryData?.updates.length && <p className="text-sm text-slate-500">No update history is available yet.</p>}
+                </div>
+              </article>
+            </div>
+            <p className="mt-3 text-xs leading-5 text-slate-500">Automation records pushes to main. Commit messages beginning with feat: or feature: are also added to Existing Features. GitHub recording does not itself prove Render/Railway deployment success; deployment status must be verified separately.</p>
           </section>
         </div>
       </main>
