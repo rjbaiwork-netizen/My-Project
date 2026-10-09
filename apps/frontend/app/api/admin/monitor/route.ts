@@ -96,12 +96,39 @@ async function getRenderDeployments() {
         url: d?.id ? `https://dashboard.render.com/web/${serviceId}/deploys/${d.id}` : undefined
       };
     });
+    const ownerId = process.env.RENDER_OWNER_ID ?? "tea-d6vpjsnkijhs73d06c6g";
+    let logs: any[] = [];
+    try {
+      const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const endTime = new Date().toISOString();
+      const params = new URLSearchParams({
+        ownerId, direction: "backward", limit: "10", startTime, endTime
+      });
+      params.append("resource", serviceId);
+      params.append("type", "app");
+      params.append("type", "build");
+      params.append("level", "error");
+      params.append("level", "warn");
+      const logResult = await fetchJson(`https://api.render.com/v1/logs?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" }
+      });
+      if (logResult.response.ok && Array.isArray(logResult.body?.logs)) {
+        logs = logResult.body.logs.map((log: any) => {
+          const labels = Array.isArray(log?.labels) ? log.labels : [];
+          const level = labels.find((label: any) => label?.name === "level")?.value ?? "error";
+          return { id: log?.id, status: String(level).toUpperCase(), createdAt: log?.timestamp, message: log?.message, url: undefined };
+        });
+      }
+    } catch { /* Deployment status remains available if the logs API is unavailable. */ }
     const latestStatus = normalizeRenderStatus(deployments[0]?.status);
     return {
       status: latestStatus === "unknown" && deployments.length === 0 ? "unavailable" as Status : latestStatus,
       note: deployments.length ? "Deployment history retrieved from the Render API." : "Render API connected; no deployment records were returned.",
       deployments,
-      recentErrors: deployments.filter((d: any) => normalizeRenderStatus(d.status) === "degraded"),
+      recentErrors: [
+        ...deployments.filter((d: any) => normalizeRenderStatus(d.status) === "degraded"),
+        ...logs
+      ].slice(0, 10),
       checkedAt: checkedAt()
     };
   } catch {
@@ -216,7 +243,7 @@ export async function GET(_request: NextRequest) {
   return NextResponse.json({
     success: true,
     checkedAt: checkedAt(),
-    refreshIntervalSeconds: 15000,
+    refreshIntervalSeconds: 15,
     frontend: { status: "healthy" as Status, checkedAt: checkedAt(), details: { note: "This monitoring endpoint is responding." } },
     backend,
     readiness,
