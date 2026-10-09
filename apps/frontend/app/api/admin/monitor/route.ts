@@ -72,7 +72,7 @@ export async function GET() {
     getLatestCommit()
   ]);
 
-  const databaseStatus = readiness.status === "healthy" && readiness.details?.database === "ready"
+  const databaseStatus = readiness.details?.database === "ready"
     ? "healthy"
     : readiness.status === "unreachable" || readiness.status === "unknown"
       ? "unknown"
