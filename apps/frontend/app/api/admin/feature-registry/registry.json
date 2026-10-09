@@ -92,7 +92,7 @@
         "apps/frontend/app/api/admin/feature-registry/route.ts",
         "docs/LIVE_SYSTEM_MONITOR.md"
       ],
-      "deploymentStatus": "Render deployment verified live for this commit; UI verification pending"
+      "deploymentStatus": "Registry correction committed; verify current live UI after deployment"
     },
     {
       "id": "910b3d8f224a91adfee12fdb4164a47679baaf4a",
