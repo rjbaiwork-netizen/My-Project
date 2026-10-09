@@ -108,7 +108,8 @@ export default function AdminMonitoringPage() {
       }
     };
     void loadRegistry();
-    return () => { cancelled = true; };
+    const timer = window.setInterval(() => void loadRegistry(), 15000);
+    return () => { cancelled = true; window.clearInterval(timer); };
   }, [monitorToken]);
 
   const latest = data?.github?.latestCommit;
