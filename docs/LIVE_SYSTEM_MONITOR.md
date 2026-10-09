@@ -1,33 +1,36 @@
 # Live System Monitor — platform API setup
 
-The Admin Panel monitor checks the app's backend health/readiness and GitHub's public `main` commit. Platform deployment history is fetched server-side and is shown as not connected until its credential is configured.
+The Admin Monitor automatically displays application health, readiness, GitHub's public main commit, Feature Registry, and Update History. No separate `MONITOR_ACCESS_TOKEN` is required.
 
 ## Render frontend service environment
 
-Set these in the Render service environment (not in the browser, source code, or public `NEXT_PUBLIC_*` variables):
+For backend health/readiness, keep these server-side variables configured:
 
-- `RENDER_API_KEY` — a Render API key with read access to the My-Project service/deployments.
-- `RENDER_SERVICE_ID` — defaults to `srv-db2e1dm0tbcc738tfkk0`; override only if the service changes.\n- `RENDER_OWNER_ID` — defaults to `tea-d6vpjsnkijhs73d06c6g`; workspace ID used for Render log queries.
-- `RAILWAY_PROJECT_TOKEN` — preferred: a Railway project token scoped to the My-Project production project/environment; OR
-- `RAILWAY_API_TOKEN` — an account/workspace token with read access to the project. Do not set both unless you intend to prefer the project token.
-- `RAILWAY_PROJECT_ID` — defaults to `828ab857-c542-4cc1-b1de-6cb1a7b155d5`.
-- `RAILWAY_ENVIRONMENT_ID` — defaults to `bbb86f7a-4adb-4d60-b790-73276a65958e`.
-- `RAILWAY_SERVICE_ID` — defaults to `8d0e4be9-457d-4b49-b81d-3e375240559a`.
+- `NEXT_PUBLIC_API_URL`
+- `ADMIN_API_TOKEN` — server-side service credential used to check the protected backend workspace endpoint.
 
-The existing `NEXT_PUBLIC_API_URL` and `ADMIN_API_TOKEN` variables must also remain configured. The monitor API verifies admin access against the backend's protected workspace endpoint before returning monitoring data.
+For private platform deployment history and logs, set provider credentials on the Render frontend service (not in browser code, source code, or public `NEXT_PUBLIC_*` variables):
 
-## Token handling and behavior
+- `RENDER_API_KEY` — Render API key with read access to the My-Project service/deployments.
+- `RENDER_SERVICE_ID` — defaults to `srv-db2e1dm0tbcc738tfkk0`.
+- `RENDER_OWNER_ID` — defaults to `tea-d6vpjsnkijhs73d06c6g`.
+- `RAILWAY_PROJECT_TOKEN` — preferred project-scoped token; OR
+- `RAILWAY_API_TOKEN` — account/workspace token with read access. If both exist, project token is preferred.
+- `RAILWAY_PROJECT_ID`, `RAILWAY_ENVIRONMENT_ID`, `RAILWAY_SERVICE_ID` — defaults are defined in the monitor route and may be overridden if resources change.
 
-- Tokens are used only in the Next.js server route and are never returned to the browser.
-- Render uses `Authorization: Bearer <RENDER_API_KEY>`.
-- Railway project tokens use the `Project-Access-Token` header; account/workspace tokens use `Authorization: Bearer`.
-- The monitor only reads recent deployment records; it does not trigger deploys, restart services, or mutate database data.
-- Missing tokens appear as `Not connected`. Invalid tokens or API failures appear as `Unavailable` with a safe diagnostic message.
-- Render warning/error logs from the last 24 hours and failed/crashed deployments are surfaced when the Render API permits access. Railway error/warning logs are queried for recent failed deployments. This is not a replacement for full provider log access.
+## Behavior and security
 
-## After setting variables
+- The separate monitor access-token prompt has been removed.
+- App health and the feature registry do not require a user-entered token.
+- Render and Railway API credentials are still required to retrieve private provider deployment history/logs. Without them, those cards show `Not connected`.
+- Provider tokens are used only server-side and are never returned to the browser.
+- The monitor performs read-only checks; it does not trigger deployments, restart services, or mutate database data.
+- Render warning/error logs from the last 24 hours and Railway logs for recent failed deployments are shown when provider API access permits.
+- The monitoring and registry endpoints are readable without a separate monitor token. Do not put sensitive secrets or private personal data in the registry.
 
-1. Save the variables on the Render frontend service and allow Render to redeploy.
-2. Open `/admin/monitoring` while signed in/authorized.
-3. Use **Refresh now** and confirm Render/Railway deployment history is returned.
-4. Verify the token scopes and IDs if either provider remains unavailable.
+## After deployment
+
+1. Open `/admin/monitoring`; it should load without a token prompt.
+2. Confirm health/readiness and Feature Registry/Update History render.
+3. Add provider credentials in Render environment settings if you want private deployment history and logs.
+4. Confirm the Render deployment succeeds before treating this change as live.
