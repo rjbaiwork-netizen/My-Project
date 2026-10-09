@@ -228,22 +228,13 @@ async function getRailwayDeployments() {
 }
 
 export async function GET(request: NextRequest) {
-  const monitorAccessToken = process.env.MONITOR_ACCESS_TOKEN;
-  const suppliedToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!monitorAccessToken) {
-    return NextResponse.json({ success: false, error: { message: "Set MONITOR_ACCESS_TOKEN on the Render frontend service, then enter that token here to view monitoring data." } }, { status: 503, headers: { "Cache-Control": "no-store" } });
-  }
-  if (!suppliedToken || suppliedToken !== monitorAccessToken) {
-    return NextResponse.json({ success: false, error: { message: "Monitoring access token is missing or invalid." } }, { status: 401, headers: { "Cache-Control": "no-store" } });
-  }
-
   const backendBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
   const adminToken = process.env.ADMIN_API_TOKEN;
   if (!backendBase || !adminToken) {
     return NextResponse.json({ success: false, error: { message: "Monitoring requires the backend URL and configured admin service token." } }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 
-  // Reuse the backend's existing admin-protected endpoint to avoid exposing monitoring data publicly.
+  // Monitoring is available without a separate monitor token; backend service credentials remain server-side.
   try {
     const authCheck = await fetch(`${backendBase}/api/admin/workspace`, {
       headers: { Authorization: `Bearer ${adminToken}`, Accept: "application/json" },
