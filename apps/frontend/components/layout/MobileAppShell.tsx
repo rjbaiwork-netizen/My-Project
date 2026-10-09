@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const groups = [
-  {title:"Website",items:[["/","Home"],["/admin/system-config","Content"],["/admin/settings","Settings"]]},
+  {title:"Website",items:[["/","Home"],["/admin/system-config","Content"],["/admin/settings","Settings"],["/admin/monitoring","Live System Monitor"]]},
   {title:"Dashboard",items:[["/dashboard","Overview"]]},
   {title:"AI System",items:[
     ["/aisystem/chat-interface","AI Chat"],["/aisystem/website-assistant","Website Assistant"],

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 const groups = [
-  { title: "Admin Workspace", links: [["Dashboard", "/admin/dashboard"], ["Profile", "/admin/profile"], ["Settings", "/admin/settings"], ["System Configuration", "/admin/system-config"]] },
+  { title: "Admin Workspace", links: [["Dashboard", "/admin/dashboard"], ["Profile", "/admin/profile"], ["Settings", "/admin/settings"], ["System Configuration", "/admin/system-config"], ["Live System Monitor", "/admin/monitoring"]] },
   { title: "Project Workspace", links: [["Dashboard", "/project/dashboard"], ["Profile", "/project/profile"], ["Settings", "/project/settings"]] },
   { title: "AI Workspace", links: [["Chat Interface", "/ai/chat-interface"], ["AI Bot", "/ai/ai-bot"]] },
 ] as const;
