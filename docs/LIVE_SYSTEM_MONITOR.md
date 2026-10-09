@@ -7,7 +7,7 @@ The Admin Panel monitor checks the app's backend health/readiness and GitHub's p
 Set these in the Render service environment (not in the browser, source code, or public `NEXT_PUBLIC_*` variables):
 
 - `RENDER_API_KEY` — a Render API key with read access to the My-Project service/deployments.
-- `RENDER_SERVICE_ID` — defaults to `srv-db2e1dm0tbcc738tfkk0`; override only if the service changes.
+- `RENDER_SERVICE_ID` — defaults to `srv-db2e1dm0tbcc738tfkk0`; override only if the service changes.\n- `RENDER_OWNER_ID` — defaults to `tea-d6vpjsnkijhs73d06c6g`; workspace ID used for Render log queries.
 - `RAILWAY_PROJECT_TOKEN` — preferred: a Railway project token scoped to the My-Project production project/environment; OR
 - `RAILWAY_API_TOKEN` — an account/workspace token with read access to the project. Do not set both unless you intend to prefer the project token.
 - `RAILWAY_PROJECT_ID` — defaults to `828ab857-c542-4cc1-b1de-6cb1a7b155d5`.
@@ -23,7 +23,7 @@ The existing `NEXT_PUBLIC_API_URL` and `ADMIN_API_TOKEN` variables must also rem
 - Railway project tokens use the `Project-Access-Token` header; account/workspace tokens use `Authorization: Bearer`.
 - The monitor only reads recent deployment records; it does not trigger deploys, restart services, or mutate database data.
 - Missing tokens appear as `Not connected`. Invalid tokens or API failures appear as `Unavailable` with a safe diagnostic message.
-- Failed/crashed deployments in the latest five records are surfaced as recent deployment errors. This is not a replacement for full provider build/runtime log access.
+- Render warning/error logs from the last 24 hours and failed/crashed deployments are surfaced when the Render API permits access. Railway error/warning logs are queried for recent failed deployments. This is not a replacement for full provider log access.
 
 ## After setting variables
 
