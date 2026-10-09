@@ -191,11 +191,35 @@ async function getRailwayDeployments() {
       : ["FAILED", "CRASHED"].includes(latest) ? "degraded"
       : ["BUILDING", "DEPLOYING", "INITIALIZING", "QUEUED", "WAITING"].includes(latest) ? "unknown"
       : deployments.length ? "unknown" : "unavailable";
+    const failedDeployments = deployments.filter((d: any) => ["FAILED", "CRASHED"].includes(String(d.status).toUpperCase()));
+    const logQuery = `query deploymentLogs($deploymentId: String!, $limit: Int) {
+      deploymentLogs(deploymentId: $deploymentId, limit: $limit) { timestamp message severity }
+    }`;
+    const logResults = await Promise.all(failedDeployments.slice(0, 2).map(async (deployment: any) => {
+      try {
+        const { response: logResponse, body: logBody } = await fetchJson("https://backboard.railway.com/graphql/v2", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ query: logQuery, variables: { deploymentId: deployment.id, limit: 10 } })
+        });
+        if (!logResponse.ok || logBody?.errors?.length || !Array.isArray(logBody?.data?.deploymentLogs)) return [];
+        return logBody.data.deploymentLogs
+          .filter((log: any) => /error|fatal|warn/i.test(String(log?.severity ?? "")) || /error|failed|exception|crash/i.test(String(log?.message ?? "")))
+          .map((log: any) => ({
+            id: `${deployment.id}-${log.timestamp}`,
+            status: String(log?.severity ?? "ERROR").toUpperCase(),
+            createdAt: log?.timestamp,
+            message: log?.message,
+            commit: deployment.commit,
+            url: undefined
+          }));
+      } catch { return []; }
+    }));
     return {
       status,
       note: deployments.length ? "Deployment history retrieved from the Railway API." : "Railway API connected; no deployment records were returned.",
       deployments,
-      recentErrors: deployments.filter((d: any) => ["FAILED", "CRASHED"].includes(String(d.status).toUpperCase())),
+      recentErrors: [...failedDeployments, ...logResults.flat()].slice(0, 10),
       checkedAt: checkedAt()
     };
   } catch {
