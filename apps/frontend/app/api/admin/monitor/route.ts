@@ -229,7 +229,7 @@ async function getRailwayDeployments() {
 
 export async function GET(request: NextRequest) {
   const monitorAccessToken = process.env.MONITOR_ACCESS_TOKEN;
-  const suppliedToken = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "");
+  const suppliedToken = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!monitorAccessToken) {
     return NextResponse.json({ success: false, error: { message: "Set MONITOR_ACCESS_TOKEN on the Render frontend service, then enter that token here to view monitoring data." } }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
