@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "features": [
+    {
+      "id": "live-system-monitor",
+      "name": "Live System Monitor",
+      "description": "Admin-এ frontend, backend, database readiness ও AI worker-এর health status দেখা।",
+      "source": "Existing monitor",
+      "addedAt": "2026-10-09"
+    },
+    {
+      "id": "github-main-commit",
+      "name": "GitHub main commit status",
+      "description": "সর্বশেষ main commit-এর SHA, message ও commit time দেখা।",
+      "source": "Existing monitor",
+      "addedAt": "2026-10-09"
+    },
+    {
+      "id": "render-deployments",
+      "name": "Render deployment history",
+      "description": "Render-এর সর্বশেষ পাঁচটি deployment record পড়া ও status দেখানো।",
+      "source": "Existing monitor",
+      "addedAt": "2026-10-09"
+    },
+    {
+      "id": "railway-deployments",
+      "name": "Railway deployment history",
+      "description": "Railway-এর সর্বশেষ পাঁচটি deployment record পড়া ও status দেখানো।",
+      "source": "Existing monitor",
+      "addedAt": "2026-10-09"
+    },
+    {
+      "id": "render-logs",
+      "name": "Render warning/error logs",
+      "description": "গত ২৪ ঘণ্টার warning/error logs পাওয়া গেলে দেখানো।",
+      "source": "Existing monitor",
+      "addedAt": "2026-10-09"
+    },
+    {
+      "id": "railway-errors",
+      "name": "Railway failed deployment logs",
+      "description": "ব্যর্থ Railway deployment-এর সাম্প্রতিক error/warning logs পড়া।",
+      "source": "Existing monitor",
+      "addedAt": "2026-10-09"
+    },
+    {
+      "id": "server-side-platform-credentials",
+      "name": "Server-side platform credentials",
+      "description": "Render/Railway API credentials শুধু server-side environment variables-এ ব্যবহার করা।",
+      "source": "Existing monitor",
+      "addedAt": "2026-10-09"
+    },
+    {
+      "id": "monitor-access-gate",
+      "name": "Monitoring access-token gate",
+      "description": "Monitoring data দেখার আগে আলাদা access token যাচাই করা।",
+      "source": "Existing monitor",
+      "addedAt": "2026-10-09"
+    },
+    {
+      "id": "feature-registry",
+      "name": "Cumulative Feature Registry",
+      "description": "এ পর্যন্ত যুক্ত ফিচারের স্থায়ী তালিকা এবং প্রতিটি update-এর history একই Admin Monitor-এ দেখা।",
+      "source": "Feature Registry update",
+      "addedAt": "2026-10-10"
+    }
+  ],
+  "updates": [
+    {
+      "id": "13341f1d6153a7162664560f5b2085beebba7173",
+      "commit": "13341f1d6153a7162664560f5b2085beebba7173",
+      "title": "feat: connect live monitor to Render and Railway",
+      "date": "2026-10-09T19:38:46.722Z",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/13341f1d6153a7162664560f5b2085beebba7173",
+      "features": [
+        "Render deployment history",
+        "Railway deployment history",
+        "Render warning/error logs",
+        "Railway failed deployment logs",
+        "Server-side platform credentials",
+        "Monitoring access-token gate"
+      ],
+      "deploymentStatus": "Check live deployment status in monitor"
+    },
+    {
+      "id": "feature-registry-initial",
+      "commit": "",
+      "title": "feat: add cumulative feature registry and update history",
+      "date": "2026-10-10T00:00:00.000Z",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project",
+      "features": [
+        "Cumulative Feature Registry",
+        "Automatic main-branch update history"
+      ],
+      "deploymentStatus": "Deployment verification pending"
+    }
+  ]
+}
