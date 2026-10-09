@@ -56,8 +56,6 @@ export default function AdminMonitoringPage() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [monitorToken, setMonitorToken] = useState("");
-  const [tokenInput, setTokenInput] = useState("");
   const [registryData, setRegistryData] = useState<RegistryPayload | null>(null);
   const [registryError, setRegistryError] = useState("");
 
@@ -65,7 +63,7 @@ export default function AdminMonitoringPage() {
     if (manual) setRefreshing(true);
     setError("");
     try {
-      const response = await fetch("/api/admin/monitor", { cache: "no-store", headers: { Authorization: `Bearer ${monitorToken}` } });
+      const response = await fetch("/api/admin/monitor", { cache: "no-store" });
       const payload = await response.json();
       if (!response.ok || !payload?.success) throw new Error(payload?.error?.message ?? "Unable to retrieve monitoring status.");
       setData(payload as MonitorData);
@@ -75,27 +73,20 @@ export default function AdminMonitoringPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [monitorToken]);
+  }, []);
 
   useEffect(() => {
-    if (!monitorToken) return;
     void load();
     const timer = window.setInterval(() => void load(), 15000);
     return () => window.clearInterval(timer);
-  }, [load, monitorToken]);
+  }, [load]);
 
   useEffect(() => {
-    if (!monitorToken) {
-      setRegistryData(null);
-      setRegistryError("");
-      return;
-    }
     let cancelled = false;
     const loadRegistry = async () => {
       try {
         const response = await fetch("/api/admin/feature-registry", {
           cache: "no-store",
-          headers: { Authorization: `Bearer ${monitorToken}` }
         });
         const payload = await response.json();
         if (!response.ok || !payload?.success) throw new Error(payload?.error?.message ?? "Unable to load feature registry.");
@@ -110,7 +101,7 @@ export default function AdminMonitoringPage() {
     void loadRegistry();
     const timer = window.setInterval(() => void loadRegistry(), 15000);
     return () => { cancelled = true; window.clearInterval(timer); };
-  }, [monitorToken]);
+  }, []);
 
   const latest = data?.github?.latestCommit;
   const worker = data?.readiness?.details?.workerStarted === true && data?.readiness?.details?.workerHasError !== true;
@@ -129,16 +120,15 @@ export default function AdminMonitoringPage() {
               <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Live System Monitor</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Live health checks for the frontend, backend, database readiness, AI worker and latest GitHub commit.</p>
             </div>
-            <button type="button" onClick={() => void load(true)} disabled={!monitorToken || refreshing} className="inline-flex w-fit items-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
+            <button type="button" onClick={() => void load(true)} disabled={refreshing} className="inline-flex w-fit items-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
               {refreshing ? "Refreshing…" : "Refresh now"}
             </button>
           </header>
 
-          <form onSubmit={(event) => { event.preventDefault(); setData(null); setLoading(true); setMonitorToken(tokenInput.trim()); }} className="mt-5 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row">
-            <input type="password" autoComplete="current-password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} placeholder="Monitoring access token" aria-label="Monitoring access token" className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500" />
-            <button type="submit" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">Connect monitor</button>
-            {monitorToken && <button type="button" onClick={() => { setMonitorToken(""); setData(null); setTokenInput(""); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Disconnect</button>}
-          </form>
+          <div className="mt-5 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+            Monitoring starts automatically; no separate monitoring access token is required.
+            Platform deployment history and provider logs still require server-side Render/Railway credentials.
+          </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
             <span>{loading ? "Checking services…" : "Auto-refresh: every 15 seconds"}</span>
@@ -196,7 +186,7 @@ export default function AdminMonitoringPage() {
           <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-bold">Recent deployment errors</h2><StatusBadge status={recentErrors.length ? "degraded" : render?.status === "not_connected" || railway?.status === "not_connected" ? "unknown" : "healthy"} /></div>
             {recentErrors.length ? <div className="mt-3 space-y-2">{recentErrors.map((item, index) => <div key={item.id ?? index} className="rounded-lg border border-rose-100 bg-rose-50 p-3"><p className="text-sm font-semibold text-rose-800">{item.status} · {item.message ?? item.id ?? "Deployment error"}</p><p className="mt-1 text-xs text-rose-700">{item.createdAt ? new Date(item.createdAt).toLocaleString() : "Timestamp unavailable"}</p></div>)}</div> : <p className="mt-2 text-sm text-slate-500">No failed deployment is present in the currently retrieved records. This does not replace platform log inspection.</p>}
-            <p className="mt-4 text-xs leading-5 text-slate-500">To enable platform deployment history, configure RENDER_API_KEY and either RAILWAY_PROJECT_TOKEN or RAILWAY_API_TOKEN as server-side environment variables on the Render frontend service. Never place these tokens in browser code or GitHub source files.</p>
+            <p className="mt-4 text-xs leading-5 text-slate-500">To enable platform deployment history, configure RENDER_API_KEY and either RAILWAY_PROJECT_TOKEN or RAILWAY_API_TOKEN as server-side environment variables on the Render frontend service. These provider credentials remain required for private deployment/log APIs; never place them in browser code or GitHub source files.</p>
           </section>
 
           <section className="mt-6">
