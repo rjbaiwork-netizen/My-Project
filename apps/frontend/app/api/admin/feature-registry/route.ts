@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const expected = process.env.MONITOR_ACCESS_TOKEN;
-  const supplied = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "");
+  const supplied = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!expected) {
     return NextResponse.json({ success: false, error: { message: "Monitoring access is not configured." } }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
