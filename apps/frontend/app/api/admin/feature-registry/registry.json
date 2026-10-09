@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "62b7a530208d",
+      "name": "add registry search and view filters (#37)",
+      "description": "Added by main-branch commit 62b7a53. See update history for changed files and deployment status.",
+      "source": "GitHub main commit",
+      "commit": "62b7a530208d4bad42b6e0cb965bc3c2197b6a70",
+      "addedAt": "2026-10-10T02:05:41+06:00"
+    },
+    {
       "id": "tokenless-monitor",
       "name": "Tokenless Admin Monitor",
       "description": "Admin Monitor loads automatically without a separate MONITOR_ACCESS_TOKEN prompt; provider API credentials remain server-side for private deployment history and logs.",
@@ -75,6 +83,18 @@
     }
   ],
   "updates": [
+    {
+      "id": "62b7a530208d4bad42b6e0cb965bc3c2197b6a70",
+      "commit": "62b7a530208d4bad42b6e0cb965bc3c2197b6a70",
+      "title": "feat: add registry search and view filters (#37)",
+      "date": "2026-10-10T02:05:41+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/62b7a530208d4bad42b6e0cb965bc3c2197b6a70",
+      "features": [
+        "add registry search and view filters (#37)"
+      ],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
     {
       "id": "monitor-tokenless-feature-registry",
       "commit": "910b3d8f224a91adfee12fdb4164a47679baaf4a",
