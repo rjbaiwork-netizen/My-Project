@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "1dfb10ee67ac",
+      "name": "add cumulative admin feature registry and update history",
+      "description": "Added by main-branch commit 1dfb10e. See update history for changed files and deployment status.",
+      "source": "GitHub main commit",
+      "commit": "1dfb10ee67ac575df9f0f6897b45c1ff1ed9c660",
+      "addedAt": "2026-10-10T01:46:52+06:00"
+    },
+    {
       "id": "live-system-monitor",
       "name": "Live System Monitor",
       "description": "Admin-এ frontend, backend, database readiness ও AI worker-এর health status দেখা।",
@@ -66,6 +74,18 @@
     }
   ],
   "updates": [
+    {
+      "id": "1dfb10ee67ac575df9f0f6897b45c1ff1ed9c660",
+      "commit": "1dfb10ee67ac575df9f0f6897b45c1ff1ed9c660",
+      "title": "feat: add cumulative admin feature registry and update history",
+      "date": "2026-10-10T01:46:52+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/1dfb10ee67ac575df9f0f6897b45c1ff1ed9c660",
+      "features": [
+        "add cumulative admin feature registry and update history"
+      ],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
     {
       "id": "13341f1d6153a7162664560f5b2085beebba7173",
       "commit": "13341f1d6153a7162664560f5b2085beebba7173",
