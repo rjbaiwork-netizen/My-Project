@@ -50,7 +50,7 @@ function MetricCard({ title, status, detail, latency }: { title: string; status?
 
 export default function AdminMonitoringPage() {
   const [data, setData] = useState<MonitorData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [monitorToken, setMonitorToken] = useState("");
@@ -95,12 +95,12 @@ export default function AdminMonitoringPage() {
               <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Live System Monitor</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Live health checks for the frontend, backend, database readiness, AI worker and latest GitHub commit.</p>
             </div>
-            <button type="button" onClick={() => void load(true)} disabled={refreshing} className="inline-flex w-fit items-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
+            <button type="button" onClick={() => void load(true)} disabled={!monitorToken || refreshing} className="inline-flex w-fit items-center rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">
               {refreshing ? "Refreshing…" : "Refresh now"}
             </button>
           </header>
 
-          <form onSubmit={(event) => { event.preventDefault(); setMonitorToken(tokenInput.trim()); }} className="mt-5 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row">
+          <form onSubmit={(event) => { event.preventDefault(); setData(null); setLoading(true); setMonitorToken(tokenInput.trim()); }} className="mt-5 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row">
             <input type="password" autoComplete="current-password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} placeholder="Monitoring access token" aria-label="Monitoring access token" className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500" />
             <button type="submit" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">Connect monitor</button>
             {monitorToken && <button type="button" onClick={() => { setMonitorToken(""); setData(null); setTokenInput(""); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Disconnect</button>}
