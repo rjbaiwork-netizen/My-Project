@@ -53,12 +53,14 @@ export default function AdminMonitoringPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [monitorToken, setMonitorToken] = useState("");
+  const [tokenInput, setTokenInput] = useState("");
 
   const load = useCallback(async (manual = false) => {
     if (manual) setRefreshing(true);
     setError("");
     try {
-      const response = await fetch("/api/admin/monitor", { cache: "no-store" });
+      const response = await fetch("/api/admin/monitor", { cache: "no-store", headers: { Authorization: `Bearer ${monitorToken}` } });
       const payload = await response.json();
       if (!response.ok || !payload?.success) throw new Error(payload?.error?.message ?? "Unable to retrieve monitoring status.");
       setData(payload as MonitorData);
@@ -97,6 +99,12 @@ export default function AdminMonitoringPage() {
               {refreshing ? "Refreshing…" : "Refresh now"}
             </button>
           </header>
+
+          <form onSubmit={(event) => { event.preventDefault(); setMonitorToken(tokenInput.trim()); }} className="mt-5 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row">
+            <input type="password" autoComplete="current-password" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} placeholder="Monitoring access token" aria-label="Monitoring access token" className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500" />
+            <button type="submit" className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">Connect monitor</button>
+            {monitorToken && <button type="button" onClick={() => { setMonitorToken(""); setData(null); setTokenInput(""); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">Disconnect</button>}
+          </form>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
             <span>{loading ? "Checking services…" : "Auto-refresh: every 15 seconds"}</span>
