@@ -70,13 +70,14 @@ export default function AdminMonitoringPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [monitorToken]);
 
   useEffect(() => {
+    if (!monitorToken) return;
     void load();
     const timer = window.setInterval(() => void load(), 15000);
     return () => window.clearInterval(timer);
-  }, [load]);
+  }, [load, monitorToken]);
 
   const latest = data?.github?.latestCommit;
   const worker = data?.readiness?.details?.workerStarted === true && data?.readiness?.details?.workerHasError !== true;
