@@ -48,3 +48,25 @@ test("same-origin check accepts exact origin and rejects a foreign origin", () =
   assert.equal(sameOrigin(request(undefined, "https://example.test")), true);
   assert.equal(sameOrigin(request(undefined, "https://attacker.test")), false);
 });
+
+test("same-origin check recognizes the public origin behind a trusted TLS reverse proxy", () => {
+  const headers = new Headers({
+    origin: "https://example.test",
+    host: "localhost:10000",
+    "x-forwarded-host": "example.test",
+    "x-forwarded-proto": "https"
+  });
+  const proxyRequest = new NextRequest(new Request("http://localhost:10000/api/admin/session", { headers }));
+  assert.equal(sameOrigin(proxyRequest), true);
+});
+
+test("same-origin check rejects a foreign origin even when forwarded headers are present", () => {
+  const headers = new Headers({
+    origin: "https://attacker.test",
+    host: "localhost:10000",
+    "x-forwarded-host": "example.test",
+    "x-forwarded-proto": "https"
+  });
+  const proxyRequest = new NextRequest(new Request("http://localhost:10000/api/admin/session", { headers }));
+  assert.equal(sameOrigin(proxyRequest), false);
+});
