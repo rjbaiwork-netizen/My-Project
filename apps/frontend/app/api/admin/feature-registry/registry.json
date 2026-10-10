@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "5c9840bffa03",
+      "name": "serve document downloads with explicit format and filename",
+      "description": "Added by main-branch commit 5c9840b. See update history for changed files and deployment status.",
+      "source": "GitHub main commit",
+      "commit": "5c9840bffa03e0f65c81dc139f554739447f1a36",
+      "addedAt": "2026-10-11T03:42:28+06:00"
+    },
+    {
       "id": "222ec031f85c",
       "name": "add extensible project document catalog",
       "description": "Added by main-branch commit 222ec03. See update history for changed files and deployment status.",
@@ -123,6 +131,18 @@
     }
   ],
   "updates": [
+    {
+      "id": "5c9840bffa03e0f65c81dc139f554739447f1a36",
+      "commit": "5c9840bffa03e0f65c81dc139f554739447f1a36",
+      "title": "feat: serve document downloads with explicit format and filename",
+      "date": "2026-10-11T03:42:28+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/5c9840bffa03e0f65c81dc139f554739447f1a36",
+      "features": [
+        "serve document downloads with explicit format and filename"
+      ],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
     {
       "id": "222ec031f85c55c3cdc0ea7bc25772647eba9750",
       "commit": "222ec031f85c55c3cdc0ea7bc25772647eba9750",
