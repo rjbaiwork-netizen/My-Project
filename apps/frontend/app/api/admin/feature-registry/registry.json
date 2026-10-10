@@ -100,6 +100,16 @@
   ],
   "updates": [
     {
+      "id": "33ab0b2643a558e45cc9961a3ecf28e87ce6a06d",
+      "commit": "33ab0b2643a558e45cc9961a3ecf28e87ce6a06d",
+      "title": "docs: add Bengali My-Project blueprint report for download",
+      "date": "2026-10-11T03:30:48+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/33ab0b2643a558e45cc9961a3ecf28e87ce6a06d",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "eba9489b701dc65a30e8753660dbe606c47bf86a",
       "commit": "eba9489b701dc65a30e8753660dbe606c47bf86a",
       "title": "ci: run security regression tests on every production build",
