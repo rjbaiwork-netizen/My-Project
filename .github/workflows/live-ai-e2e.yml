@@ -14,6 +14,9 @@ jobs:
   live-production-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # Add this repository Actions secret to enable authenticated production AI E2E.
+      ADMIN_LOGIN_PASSWORD: ${{ secrets.ADMIN_LOGIN_PASSWORD }}
     steps:
       - name: Wait for Railway backend readiness
         env:
@@ -110,12 +113,37 @@ jobs:
         run: |
           set -euo pipefail
           node <<'NODE'
-          const api = process.env.API_BASE.replace(/\/$/, "");
           const front = process.env.FRONTEND_URL.replace(/\/$/, "");
+          // AI endpoints now require the same signed admin session as the live UI.
+          const api = front;
+          let sessionCookie = "";
+          async function authenticate() {
+            if (!process.env.ADMIN_LOGIN_PASSWORD) {
+              const probe = await fetch(api + "/api/ai/agents", { cache: "no-store" });
+              if (probe.status !== 401) throw new Error("Unauthenticated AI access must return HTTP 401");
+              console.log("PASS unauthenticated AI access is blocked; authenticated E2E skipped because ADMIN_LOGIN_PASSWORD Actions secret is not configured");
+              process.exit(0);
+            }
+            const response = await fetch(front + "/api/admin/login", {
+              method: "POST",
+              headers: { "content-type": "application/json", origin: front },
+              body: JSON.stringify({ password: process.env.ADMIN_LOGIN_PASSWORD }),
+              cache: "no-store"
+            });
+            if (!response.ok) throw new Error("Admin login failed with HTTP " + response.status);
+            const setCookie = response.headers.get("set-cookie") || "";
+            const cookie = setCookie.match(/my_project_admin_session=([^;]+)/);
+            if (!cookie) throw new Error("Admin login did not issue the expected session cookie");
+            sessionCookie = "my_project_admin_session=" + cookie[1];
+            const session = await fetch(front + "/api/admin/session", { headers: { cookie: sessionCookie }, cache: "no-store" });
+            const state = await session.json();
+            if (!session.ok || state.authenticated !== true) throw new Error("Admin session verification failed");
+            console.log("PASS admin login + signed session verification");
+          }
           async function request(path, options = {}) {
             const r = await fetch(api + path, {
               ...options,
-              headers: { "content-type": "application/json", ...(options.headers || {}) }
+              headers: { "content-type": "application/json", ...(sessionCookie ? { cookie: sessionCookie } : {}), ...(options.headers || {}) }
             });
             const raw = await r.text();
             let body;
@@ -124,6 +152,7 @@ jobs:
             return body;
           }
 
+          await authenticate();
           const diagnostic = await request("/api/ai/automations/diagnose", {
             method: "POST",
             body: JSON.stringify({
@@ -170,9 +199,28 @@ jobs:
         run: |
           node <<'NODE'
           const base = process.env.FRONTEND_URL.replace(/\/$/, "");
+          let cookie = "";
+          if (process.env.ADMIN_LOGIN_PASSWORD) {
+            const login = await fetch(base + "/api/admin/login", {
+              method: "POST",
+              headers: { "content-type": "application/json", origin: base },
+              body: JSON.stringify({ password: process.env.ADMIN_LOGIN_PASSWORD }),
+              cache: "no-store"
+            });
+            if (!login.ok) throw new Error("Provider diagnostics admin login failed: HTTP " + login.status);
+            const setCookie = login.headers.get("set-cookie") || "";
+            const match = setCookie.match(/my_project_admin_session=([^;]+)/);
+            if (!match) throw new Error("Provider diagnostics login did not return a session cookie");
+            cookie = "my_project_admin_session=" + match[1];
+          } else {
+            const denied = await fetch(base + "/api/ai/providers", { cache: "no-store" });
+            if (denied.status !== 401) throw new Error("Unauthenticated provider diagnostics must be blocked with HTTP 401");
+            console.log("PASS AI provider endpoints require admin session; detailed provider diagnostics skipped (Actions secret missing)");
+            process.exit(0);
+          }
           for (const path of ["/api/ai/providers", "/api/ai/providers/events?limit=12"]) {
             try {
-              const response = await fetch(base + path, { cache: "no-store" });
+              const response = await fetch(base + path, { headers: { cookie }, cache: "no-store" });
               const body = await response.json();
               if (!response.ok || body.success !== true) {
                 console.log(JSON.stringify({ path, status: response.status, available: false }));
@@ -203,13 +251,38 @@ jobs:
           set -euo pipefail
 
           node <<'NODE'
-          const base = process.env.API_BASE;
+          const base = process.env.FRONTEND_URL.replace(/\/$/, "");
           const ids = { conversations: [], memories: [], knowledge: [] };
+          let sessionCookie = "";
+
+          async function authenticate() {
+            if (!process.env.ADMIN_LOGIN_PASSWORD) {
+              const probe = await fetch(base + "/api/ai/conversations", { cache: "no-store" });
+              if (probe.status !== 401) throw new Error("Unauthenticated AI conversation access must return HTTP 401");
+              console.log("PASS unauthenticated AI access is blocked; Chat/Knowledge/Memory E2E skipped because ADMIN_LOGIN_PASSWORD Actions secret is not configured");
+              process.exit(0);
+            }
+            const response = await fetch(base + "/api/admin/login", {
+              method: "POST",
+              headers: { "content-type": "application/json", origin: base },
+              body: JSON.stringify({ password: process.env.ADMIN_LOGIN_PASSWORD }),
+              cache: "no-store"
+            });
+            if (!response.ok) throw new Error("Chat E2E admin login failed with HTTP " + response.status);
+            const setCookie = response.headers.get("set-cookie") || "";
+            const cookie = setCookie.match(/my_project_admin_session=([^;]+)/);
+            if (!cookie) throw new Error("Chat E2E login did not issue the expected session cookie");
+            sessionCookie = "my_project_admin_session=" + cookie[1];
+            const session = await fetch(base + "/api/admin/session", { headers: { cookie: sessionCookie }, cache: "no-store" });
+            const state = await session.json();
+            if (!session.ok || state.authenticated !== true) throw new Error("Chat E2E admin session verification failed");
+            console.log("PASS Chat E2E admin login + signed session verification");
+          }
 
           async function request(path, options = {}) {
             const res = await fetch(base + path, {
               ...options,
-              headers: { "content-type": "application/json", ...(options.headers || {}) }
+              headers: { "content-type": "application/json", ...(sessionCookie ? { cookie: sessionCookie } : {}), ...(options.headers || {}) }
             });
             const text = await res.text();
             let body;
@@ -231,6 +304,7 @@ jobs:
           }
 
           try {
+            await authenticate();
             const marker = "LIVE-E2E-" + Date.now();
             const conversations = await request("/api/ai/conversations");
             if (conversations.success !== true || !Array.isArray(conversations.data)) throw new Error("Conversation list contract failed");
