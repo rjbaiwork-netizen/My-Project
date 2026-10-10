@@ -100,6 +100,16 @@
   ],
   "updates": [
     {
+      "id": "eba9489b701dc65a30e8753660dbe606c47bf86a",
+      "commit": "eba9489b701dc65a30e8753660dbe606c47bf86a",
+      "title": "ci: run security regression tests on every production build",
+      "date": "2026-10-11T02:28:18+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/eba9489b701dc65a30e8753660dbe606c47bf86a",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "20558d9ce30b3674e624d2bb11d7a52a5babfd93",
       "commit": "20558d9ce30b3674e624d2bb11d7a52a5babfd93",
       "title": "test(security): require valid same-origin rejection status after proxy fix",
