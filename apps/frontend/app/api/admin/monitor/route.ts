@@ -36,6 +36,25 @@ async function checkEndpoint(url: string | undefined): Promise<any> {
   }
 }
 
+type WorkflowRun = { id: number; name?: string; status?: string; conclusion?: string | null; created_at?: string; updated_at?: string; html_url?: string; head_sha?: string; head_branch?: string };
+
+async function getGitHubActions() {
+  try {
+    const { response, body } = await fetchJson("https://api.github.com/repos/rjbaiwork-netizen/My-Project/actions/runs?per_page=5", {
+      headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }
+    });
+    if (!response.ok) return { status: "unavailable" as Status, note: `GitHub Actions API returned HTTP ${response.status}.`, runs: [], checkedAt: checkedAt() };
+    const runs = Array.isArray(body?.workflow_runs) ? body.workflow_runs.slice(0, 5).map((run: WorkflowRun) => ({
+      id: run.id, name: run.name, status: run.status, conclusion: run.conclusion,
+      createdAt: run.created_at, updatedAt: run.updated_at, url: run.html_url,
+      commit: run.head_sha, branch: run.head_branch
+    })) : [];
+    return { status: "available" as Status, note: "Public GitHub Actions workflow runs retrieved.", runs, checkedAt: checkedAt() };
+  } catch {
+    return { status: "unavailable" as Status, note: "GitHub Actions status could not be retrieved.", runs: [], checkedAt: checkedAt() };
+  }
+}
+
 async function getLatestCommit() {
   try {
     const { response, body } = await fetchJson("https://api.github.com/repos/rjbaiwork-netizen/My-Project/commits/main", {
@@ -251,7 +270,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: { message: "Unable to verify admin access with the backend." } }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 
-  const [backend, readiness, latestCommit, render, railway] = await Promise.all([
+  const [backend, readiness, latestCommit, githubActions, render, railway] = await Promise.all([
     checkEndpoint(`${backendBase}/health`),
     checkEndpoint(`${backendBase}/ready`),
     getLatestCommit(),
