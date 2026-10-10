@@ -18,20 +18,20 @@ function escapeHtml(value: string): string {
 
 function toPlainText(markdown: string): string {
   return markdown
-    .replace(/^\\s*[-*_]{3,}\\s*$/gm, "")
-    .replace(/^\\s{0,3}#{1,6}\\s+/gm, "")
-    .replace(/^\\s*>\\s?/gm, "")
-    .replace(/^\\s*[-*+]\\s+/gm, "• ")
-    .replace(/^\\s*\\d+\\.\\s+/gm, "")
-    .replace(/\\*\\*(.*?)\\*\\*/g, "$1")
+    .replace(/^\s*[-*_]{3,}\s*$/gm, "")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s*>\s?/gm, "")
+    .replace(/^\s*[-*+]\s+/gm, "• ")
+    .replace(/^\s*\d+\.\s+/gm, "")
+    .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/__(.*?)__/g, "$1")
-    .replace(/\\*(.*?)\\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
     .replace(/_(.*?)_/g, "$1")
-    .replace(/\\[(.*?)\\]\\((https?:[^)]+)\\)/g, "$1 ($2)")
+    .replace(/\[(.*?)\]\((https?:[^)]+)\)/g, "$1 ($2)")
     .replace(/`([^`]+)`/g, "$1")
-    .replace(/^\\|.*\\|$/gm, (line) => line.replace(/^\\|/, "").replace(/\\|$/, "").replace(/\\|/g, "  |  "))
-    .replace(/^\\s*:?[-]+:?([| :?-]*).*$/gm, "")
-    .trim() + "\\n";
+    .replace(/^\|.*\|$/gm, (line) => line.replace(/^\|/, "").replace(/\|$/, "").replace(/\|/g, "  |  "))
+    .replace(/^\s*:?[-]+:?([| :?-]*).*$/gm, "")
+    .trim() + "\n";
 }
 
 export async function GET(
@@ -60,7 +60,7 @@ export async function GET(
   try {
     const filePath = path.join(process.cwd(), "public", "docs", document.filename);
     const markdown = await readFile(filePath, "utf8");
-    const baseName = document.filename.replace(/\\.md$/i, "");
+    const baseName = document.filename.replace(/\.md$/i, "");
     let body = markdown;
     let contentType = "text/markdown; charset=utf-8";
     let filename = baseName + ".md";
