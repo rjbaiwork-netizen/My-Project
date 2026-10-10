@@ -400,7 +400,7 @@ export default function ChatInterfaceWorkPlanPage() {
             <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-slate-200">
               <li>GitHub Actions-এ non-deploying Phase 02 validation workflow যোগ করা হয়েছে: shared/frontend/backend build এবং Prisma schema validation।</li>
               <li>Workflow-এ শুধু placeholder DATABASE_URL ব্যবহৃত হবে; কোনো production database connection বা data mutation নয়।</li>
-              <li>এই মুহূর্তে branch-এর build, Prisma validation, login/session browser flow ও confirmation integration-এর PASS প্রমাণ নেই। Workflow result না আসা পর্যন্ত এগুলো unverified থাকবে।</li>
+              <li>GitHub Actions Phase 02 Security Branch Validation run #3-এ shared package build, frontend build, backend build এবং Prisma schema validation—চারটি ধাপই PASS হয়েছে। এটি compile/schema validation-এর প্রমাণ; login/session browser flow, real API integration, migration apply ও confirmation replay tests এখনও unverified।</li>
               <li>Production চালুর আগে Render-এ ADMIN_LOGIN_PASSWORD, ADMIN_SESSION_SECRET (কমপক্ষে ৩২ অক্ষর), ADMIN_API_TOKEN এবং Railway-তে একই ADMIN_API_TOKEN configure করতে হবে। Secret কখনো GitHub-এ commit করা যাবে না।</li>
               <li>Login endpoint-এর rate limiting এবং logout UI এখনও hardening backlog-এ আছে।</li>
             </ul>
