@@ -13,7 +13,7 @@ router.get("/providers",listAIProviders);
 router.get("/providers/events",listAIProviderEvents);
 router.post("/providers/reindex-knowledge",reindexKnowledgeRoute);
 router.post("/chat",chat);
-router.post("/control-chat",requireAdminAuth,controlChat);
+router.post("/control-chat",controlChat);
 router.get("/conversations",listConversations);
 router.get("/conversations/:id",getConversation);
 router.patch("/conversations/:id",renameConversation);
