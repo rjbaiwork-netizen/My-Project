@@ -407,17 +407,17 @@ export default function ChatInterfaceWorkPlanPage() {
             <p className="mt-3 leading-7 text-slate-300">
               Branch <code>phase-02/ai-control-security</code>-এ admin session, same-origin API proxy,
               backend AI-route bearer authorization এবং database-backed one-time confirmation-এর code যোগ করা হয়েছে।
-              এই পরিবর্তনগুলো এখনও draft PR #42-এ আছে; main branch বা production deployment-এ merge করা হয়নি।
+              এই পরিবর্তনগুলো draft PR #42-এ আছে; main branch বা production deployment-এ merge করা হয়নি।
             </p>
             <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-slate-200">
-              <li>GitHub Actions-এ non-deploying Phase 02 validation workflow যোগ করা হয়েছে: shared/frontend/backend build এবং Prisma schema validation।</li>
+              <li>GitHub Actions-এ non-deploying Phase 02 validation workflow shared/frontend/backend build, security unit tests এবং Prisma schema validation চালায়। সর্বশেষ Run #19 PASS।</li>
               <li>Workflow-এ শুধু placeholder DATABASE_URL ব্যবহৃত হবে; কোনো production database connection বা data mutation নয়।</li>
-              <li>GitHub Actions Phase 02 Security Branch Validation run #3-এ shared package build, frontend build, backend build এবং Prisma schema validation—চারটি ধাপই PASS হয়েছে। এটি compile/schema validation-এর প্রমাণ; login/session browser flow, real API integration, migration apply ও confirmation replay tests এখনও unverified।</li>
+              <li>GitHub Actions Phase 02 Security Branch Validation run #19-এ shared package build, frontend build, backend build, backend bearer-auth tests, confirmation expiry/replay/concurrency tests, login rate-limit tests এবং Prisma schema validation—সব ধাপ PASS হয়েছে। এটি automated unit/build/schema validation; browser E2E, live API integration এবং বাস্তব database migration এখনও যাচাই করা হয়নি।</li>
               <li>Production চালুর আগে Render-এ ADMIN_LOGIN_PASSWORD, ADMIN_SESSION_SECRET (কমপক্ষে ৩২ অক্ষর), ADMIN_API_TOKEN এবং Railway-তে একই ADMIN_API_TOKEN configure করতে হবে। Secret কখনো GitHub-এ commit করা যাবে না।</li>
-              <li>Login endpoint-এর rate limiting এবং logout UI এখনও hardening backlog-এ আছে।</li>
+              <li>Login endpoint-এ প্রতি IP-তে ১৫ মিনিটে ৫টি failed attempt-এর পর HTTP 429/Retry-After rate limiting এবং Chat Interface-এ Log out control যোগ করা হয়েছে। Rate limiter process-local, তাই একাধিক instance-এ এটি best-effort; production multi-instance setup-এ shared-store/edge rate limit দরকার।</li>
             </ul>
             <p className="mt-4 border-t border-white/10 pt-4 font-semibold leading-7 text-white">
-              পরবর্তী ধাপ: CI ফলাফল পরীক্ষা → ব্যর্থ build/type/schema issue ঠিক করা → non-destructive auth/proxy tests → তারপরই review-এর জন্য প্রস্তুত করা। Merge/deploy আলাদা অনুমোদন ছাড়া হবে না।
+              বর্তমান অবস্থা: Run #19-এর automated validation PASS। বাকি gated verification হলো non-production browser/E2E ও proxy/origin checks, internal caller audit, target database যাচাই করে migration apply, Render/Railway secrets configure, এবং non-destructive deployed smoke test। এই পরিবেশ থেকে production secrets পড়া/লেখা, database migration, merge বা deployment করা হয়নি। Merge/deploy ও production configuration পরিবর্তনের জন্য আলাদা অনুমোদন প্রয়োজন।
             </p>
           </section>
 
