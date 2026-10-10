@@ -136,6 +136,18 @@ export default function ChatInterfaceWorkPlanPage() {
             </p>
           </header>
 
+          <section className="mt-6 rounded-2xl border border-blue-400/25 bg-blue-400/5 p-5">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-blue-300">Phase 02 Security Implementation · 2026-10-10</p>
+            <h2 className="mt-2 text-xl font-bold">কোড-স্তরের ফলো-আপ</h2>
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-300">
+              <li>Backend AI route-এ bearer-token authorization-এর missing token, wrong token ও valid token test যোগ করা হয়েছে; CI workflow-তে security test চালানো যুক্ত হয়েছে।</li>
+              <li>Admin login-এ প্রতি client key-তে ১৫ মিনিটে ৫টি failed attempt-এর পর 429/Retry-After যোগ হয়েছে; সঠিক login হলে ওই key-এর failure counter reset হয়। এটি process-local limiter, তাই multi-instance/edge-level rate limit-এর বিকল্প নয়।</li>
+              <li>Chat Interface-এ logout control যোগ হয়েছে; Cancel চাপলে server-side pending confirmation consumed/revoked হয়। Confirmation-এর exact action server-side record থেকেই execute হয় এবং একবারই consume করা যায়।</li>
+              <li>এগুলো এখনো branch/PR-এর পরিবর্তন; automated CI PASS না হওয়া পর্যন্ত test pass বলা যাবে না। Browser E2E, database migration, replay/concurrency integration test এবং production smoke test আলাদা করে বাকি।</li>
+              <li>Render/Railway secrets বা migration পরিবর্তন করা হয়নি; main-এ merge এবং production deployment করা হয়নি।</li>
+            </ul>
+          </section>
+
           <section className="mt-6 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-5">
             <p className="text-xs font-bold uppercase tracking-[.16em] text-amber-300">Phase 01 Audit Record · 2026-10-10</p>
             <h2 className="mt-2 text-xl font-bold">প্রাথমিক অডিটের ফলাফল</h2>
