@@ -45,8 +45,27 @@ export function clearAdminCookie() {
 }
 
 export function sameOrigin(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  return !!origin && origin === request.nextUrl.origin;
+  const rawOrigin = request.headers.get("origin");
+  if (!rawOrigin) return false;
+
+  let origin: URL;
+  try {
+    origin = new URL(rawOrigin);
+  } catch {
+    return false;
+  }
+  // Reject Origin values containing a path, query, or fragment.
+  if (rawOrigin !== origin.origin) return false;
+  if (origin.origin === request.nextUrl.origin) return true;
+
+  // Render and other trusted reverse proxies may terminate TLS before Next.js.
+  // Prefer the proxy's forwarded public origin when it is available.
+  const firstHeader = (name: string) => request.headers.get(name)?.split(",")[0]?.trim();
+  const host = firstHeader("x-forwarded-host") ?? firstHeader("host");
+  const protocol = (firstHeader("x-forwarded-proto") ?? request.nextUrl.protocol.replace(/:$/, "")).toLowerCase();
+  if (!host || !protocol) return false;
+
+  return origin.host.toLowerCase() === host.toLowerCase() && origin.protocol === `${protocol}:`;
 }
 
 export function verifyAdminPassword(input: unknown) {
