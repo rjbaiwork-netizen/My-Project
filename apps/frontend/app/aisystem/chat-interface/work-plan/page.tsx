@@ -170,6 +170,18 @@ export default function ChatInterfaceWorkPlanPage() {
             </p>
           </section>
 
+          <section className="mt-6 rounded-2xl border border-emerald-400/25 bg-emerald-400/5 p-5">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-emerald-200">Phase 02 · Implementation update · 2026-10-10</p>
+            <h2 className="mt-2 text-xl font-bold">Confirmation এখন preview করা action-এর সঙ্গেই বাঁধা</h2>
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-300">
+              <li>Prisma schema ও migration-এ server-side <code>AIControlConfirmation</code> record যোগ করা হয়েছে। Preview-তে action parameters database-এ সংরক্ষিত হয় এবং confirmation ID ফেরত আসে।</li>
+              <li>Confirmation record-এর মেয়াদ ৫ মিনিট; confirm request-এ natural-language message পুনরায় plan করা হয় না—শুধু সংরক্ষিত action execute হয়।</li>
+              <li>Database-এর conditional <code>updateMany</code> দিয়ে confirmation একবার consume করা হয়; expired/replayed ID প্রত্যাখ্যান করা হয়। Execution ব্যর্থ হলে একই confirmation পুনরায় চালানো যায় না।</li>
+              <li>Chat UI এখন preview response-এর confirmation ID pending state-এ রাখে এবং Confirm-এ সেটিই পাঠায়।</li>
+            </ul>
+            <p className="mt-3 text-sm leading-6 text-amber-100"><strong>এখনও যাচাই বাকি:</strong> GitHub build/CI, Prisma validate/generate, migration apply, concurrency/replay tests এবং authenticated frontend proxy। এই পরিবর্তনগুলো draft PR branch-এ আছে; main বা production-এ deploy করা হয়নি।</p>
+          </section>
+
           <section className="mt-6 rounded-2xl border border-white/10 bg-slate-900/70 p-5">
             <h2 className="text-xl font-bold">মূল দিকনির্দেশনা</h2>
             <p className="mt-3 leading-7 text-slate-300">
