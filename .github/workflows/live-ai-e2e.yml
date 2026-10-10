@@ -102,12 +102,11 @@ jobs:
                   body: check.method === "PATCH" ? JSON.stringify({ title: "security-probe", content: {} }) : undefined,
                   cache: "no-store"
                 });
-                if (denied.status === 401 || (check.method === "PATCH" && denied.status === 403)) break;
+                if (denied.status === 401) break;
                 console.log("Waiting for the latest Render admin security deployment on " + check.path + " (" + (i + 1) + "/36); HTTP " + denied.status);
                 await new Promise(resolve => setTimeout(resolve, 10000));
               }
-              const blocked = denied?.status === 401 || (check.method === "PATCH" && denied?.status === 403);
-              if (!blocked) throw new Error("Unauthenticated admin access to " + check.path + " (" + check.method + ") must return HTTP 401 or origin-protected 403 after deployment; got " + denied?.status);
+              if (denied?.status !== 401) throw new Error("Unauthenticated admin access to " + check.path + " (" + check.method + ") must return HTTP 401 after the proxy-origin fix; got " + denied?.status);
               console.log("PASS unauthenticated admin access blocked: " + check.method + " " + check.path + " -> HTTP " + denied.status);
             }
             console.log("Authenticated CMS CRUD E2E skipped because ADMIN_LOGIN_PASSWORD Actions secret is not configured");
