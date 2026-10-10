@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAdminSession } from "../../../../lib/adminSession";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -247,6 +248,9 @@ async function getRailwayDeployments() {
 }
 
 export async function GET(request: NextRequest) {
+  if (!verifyAdminSession(request)) {
+    return NextResponse.json({ success: false, error: { message: "Administrator login is required." } }, { status: 401, headers: { "Cache-Control": "no-store" } });
+  }
   const backendBase = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
   const adminToken = process.env.ADMIN_API_TOKEN;
   if (!backendBase || !adminToken) {
