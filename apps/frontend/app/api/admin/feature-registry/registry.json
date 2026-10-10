@@ -116,6 +116,16 @@
   ],
   "updates": [
     {
+      "id": "2ba5161c95e620fdf144f81fe8b0cdb1c62e2f11",
+      "commit": "2ba5161c95e620fdf144f81fe8b0cdb1c62e2f11",
+      "title": "fix: force report download with explicit attachment headers",
+      "date": "2026-10-11T03:39:59+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/2ba5161c95e620fdf144f81fe8b0cdb1c62e2f11",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "b3c250d03df98a47f3ff004b14915bad9f29c579",
       "commit": "b3c250d03df98a47f3ff004b14915bad9f29c579",
       "title": "feat: make documents download link visible across frontend",
