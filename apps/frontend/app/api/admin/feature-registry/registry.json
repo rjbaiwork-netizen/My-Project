@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "1b0154011dc6",
+      "name": "add Word and PDF download options to document library",
+      "description": "Added by main-branch commit 1b01540. See update history for changed files and deployment status.",
+      "source": "GitHub main commit",
+      "commit": "1b0154011dc6673178a139a4dc134467528144db",
+      "addedAt": "2026-10-11T03:48:37+06:00"
+    },
+    {
       "id": "0c5c6976cb19",
       "name": "generate downloadable DOCX and PDF reports",
       "description": "Added by main-branch commit 0c5c697. See update history for changed files and deployment status.",
@@ -163,6 +171,18 @@
     }
   ],
   "updates": [
+    {
+      "id": "1b0154011dc6673178a139a4dc134467528144db",
+      "commit": "1b0154011dc6673178a139a4dc134467528144db",
+      "title": "feat: add Word and PDF download options to document library",
+      "date": "2026-10-11T03:48:37+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/1b0154011dc6673178a139a4dc134467528144db",
+      "features": [
+        "add Word and PDF download options to document library"
+      ],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
     {
       "id": "0c5c6976cb19e5006969c8043e545a46ef7335f8",
       "commit": "0c5c6976cb19e5006969c8043e545a46ef7335f8",
