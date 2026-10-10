@@ -86,8 +86,14 @@ jobs:
           console.log(`PASS backend health + public CMS: ${publicSections.body.data.length} sections, ${publicSections.body.data.filter(s=>s.isVisible).length} visible`);
 
           if (!process.env.ADMIN_LOGIN_PASSWORD) {
-            const denied = await fetch(front + "/api/admin/sections", { cache: "no-store" });
-            if (denied.status !== 401) throw new Error("Unauthenticated CMS admin access must return HTTP 401");
+            let denied;
+            for (let i = 0; i < 36; i++) {
+              denied = await fetch(front + "/api/admin/sections", { cache: "no-store" });
+              if (denied.status === 401) break;
+              console.log("Waiting for the latest Render CMS admin security deployment (" + (i + 1) + "/36); HTTP " + denied.status);
+              await new Promise(resolve => setTimeout(resolve, 10000));
+            }
+            if (denied?.status !== 401) throw new Error("Unauthenticated CMS admin access must return HTTP 401 after deployment; got " + denied?.status);
             console.log("PASS CMS admin API rejects unauthenticated requests; authenticated CRUD E2E skipped because ADMIN_LOGIN_PASSWORD Actions secret is not configured");
           } else {
             const login = await fetch(front + "/api/admin/login", {
@@ -138,8 +144,14 @@ jobs:
           let sessionCookie = "";
           async function authenticate() {
             if (!process.env.ADMIN_LOGIN_PASSWORD) {
-              const probe = await fetch(api + "/api/ai/agents", { cache: "no-store" });
-              if (probe.status !== 401) throw new Error("Unauthenticated AI access must return HTTP 401");
+              let probe;
+              for (let i = 0; i < 36; i++) {
+                probe = await fetch(api + "/api/ai/agents", { cache: "no-store" });
+                if (probe.status === 401) break;
+                console.log("Waiting for latest protected AI backend (" + (i + 1) + "/36); HTTP " + probe.status);
+                await new Promise(resolve => setTimeout(resolve, 10000));
+              }
+              if (probe?.status !== 401) throw new Error("Unauthenticated AI access must return HTTP 401 after deployment; got " + probe?.status);
               console.log("PASS unauthenticated AI access is blocked; authenticated E2E skipped because ADMIN_LOGIN_PASSWORD Actions secret is not configured");
               process.exit(0);
             }
@@ -233,8 +245,14 @@ jobs:
             cookie = "my_project_admin_session=" + match[1];
           } else {
             for (const path of ["/api/ai/providers", "/api/ai/providers/events?limit=12", "/api/ai/provider-integrations"]) {
-              const denied = await fetch(base + path, { cache: "no-store" });
-              if (denied.status !== 401) throw new Error("Unauthenticated access to " + path + " must return HTTP 401; got " + denied.status);
+              let denied;
+              for (let i = 0; i < 36; i++) {
+                denied = await fetch(base + path, { cache: "no-store" });
+                if (denied.status === 401) break;
+                console.log("Waiting for the latest Render security deployment on " + path + " (" + (i + 1) + "/36); HTTP " + denied.status);
+                await new Promise(resolve => setTimeout(resolve, 10000));
+              }
+              if (denied?.status !== 401) throw new Error("Unauthenticated access to " + path + " must return HTTP 401 after deployment; got " + denied?.status);
               console.log("PASS unauthenticated access blocked: " + path);
             }
             console.log("Authenticated provider diagnostics skipped because ADMIN_LOGIN_PASSWORD Actions secret is not configured");
@@ -279,8 +297,14 @@ jobs:
 
           async function authenticate() {
             if (!process.env.ADMIN_LOGIN_PASSWORD) {
-              const probe = await fetch(base + "/api/ai/conversations", { cache: "no-store" });
-              if (probe.status !== 401) throw new Error("Unauthenticated AI conversation access must return HTTP 401");
+              let probe;
+              for (let i = 0; i < 36; i++) {
+                probe = await fetch(base + "/api/ai/conversations", { cache: "no-store" });
+                if (probe.status === 401) break;
+                console.log("Waiting for latest protected AI conversation endpoint (" + (i + 1) + "/36); HTTP " + probe.status);
+                await new Promise(resolve => setTimeout(resolve, 10000));
+              }
+              if (probe?.status !== 401) throw new Error("Unauthenticated AI conversation access must return HTTP 401 after deployment; got " + probe?.status);
               console.log("PASS unauthenticated AI access is blocked; Chat/Knowledge/Memory E2E skipped because ADMIN_LOGIN_PASSWORD Actions secret is not configured");
               process.exit(0);
             }
