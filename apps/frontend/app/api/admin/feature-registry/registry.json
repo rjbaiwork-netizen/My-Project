@@ -100,6 +100,16 @@
   ],
   "updates": [
     {
+      "id": "64e4bb4f6086da27cc97c6df57a81ab2c412fc4a",
+      "commit": "64e4bb4f6086da27cc97c6df57a81ab2c412fc4a",
+      "title": "ci: configure frontend URL for authenticated chat E2E",
+      "date": "2026-10-11T02:08:05+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/64e4bb4f6086da27cc97c6df57a81ab2c412fc4a",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "8e8c3ab4bb5a062cae7e8ae5128ff282266cb1a3",
       "commit": "8e8c3ab4bb5a062cae7e8ae5128ff282266cb1a3",
       "title": "ci: align live AI E2E with signed admin session",
