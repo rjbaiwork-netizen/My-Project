@@ -100,6 +100,16 @@
   ],
   "updates": [
     {
+      "id": "587add5d857bb8c909424c1e6fb74db1d17c42c8",
+      "commit": "587add5d857bb8c909424c1e6fb74db1d17c42c8",
+      "title": "fix(security): pass request into admin workspace guard",
+      "date": "2026-10-11T02:18:18+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/587add5d857bb8c909424c1e6fb74db1d17c42c8",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "1876ff15e33d989713a376888e3fa95345561b62",
       "commit": "1876ff15e33d989713a376888e3fa95345561b62",
       "title": "test(security): cover all dedicated AI provider proxies",
