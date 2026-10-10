@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "79e417479a1d",
+      "name": "integrate API connection center and operations diagnostics (#38)",
+      "description": "Added by main-branch commit 79e4174. See update history for changed files and deployment status.",
+      "source": "GitHub main commit",
+      "commit": "79e417479a1dffa978a72d07ff425299c7fd411c",
+      "addedAt": "2026-10-10T19:33:12+06:00"
+    },
+    {
       "id": "operations-connection-diagnostics",
       "name": "Operations Connection Center & Automated Diagnosis",
       "description": "একই Admin Monitor-এ API credentials configured কি না (শুধু boolean), GitHub Actions-এর সাম্প্রতিক workflow runs, health/readiness-ভিত্তিক rule diagnosis ও করণীয় দেখায়; সব checks read-only।",
@@ -91,6 +99,18 @@
     }
   ],
   "updates": [
+    {
+      "id": "79e417479a1dffa978a72d07ff425299c7fd411c",
+      "commit": "79e417479a1dffa978a72d07ff425299c7fd411c",
+      "title": "feat: integrate API connection center and operations diagnostics (#38)",
+      "date": "2026-10-10T19:33:12+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/79e417479a1dffa978a72d07ff425299c7fd411c",
+      "features": [
+        "integrate API connection center and operations diagnostics (#38)"
+      ],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
     {
       "id": "operations-connection-diagnostics",
       "commit": "",
