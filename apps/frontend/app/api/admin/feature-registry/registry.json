@@ -100,6 +100,16 @@
   ],
   "updates": [
     {
+      "id": "1876ff15e33d989713a376888e3fa95345561b62",
+      "commit": "1876ff15e33d989713a376888e3fa95345561b62",
+      "title": "test(security): cover all dedicated AI provider proxies",
+      "date": "2026-10-11T02:16:45+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/1876ff15e33d989713a376888e3fa95345561b62",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "916c0d69311e50bf7adacc05582bc5e033015e93",
       "commit": "916c0d69311e50bf7adacc05582bc5e033015e93",
       "title": "fix(frontend): correct admin workspace auth import",
