@@ -6,6 +6,7 @@ export async function controlChat(req:Request,res:Response){
  if(!message)return void res.status(400).json({success:false,error:{message:"message is required."}});
  try{
   const planned=await planChatControl(message);
+  if((planned as {plannerError?:boolean}).plannerError)return res.status(503).json({success:false,error:{message:"AI Control planner is unavailable. No control action was executed; please retry later."}});
   if(!planned.action)return res.json({success:true,data:{mode:"conversation",action:null}});
   if(actionNeedsConfirmation(planned.action)&&req.body?.confirm!==true)
    return res.json({success:true,data:{mode:"action_preview",action:planned.action,requiresConfirmation:true}});
