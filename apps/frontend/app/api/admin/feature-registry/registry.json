@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "c64248d9bc2c",
+      "name": "add DOCX and PDF document export dependencies",
+      "description": "Added by main-branch commit c64248d. See update history for changed files and deployment status.",
+      "source": "GitHub main commit",
+      "commit": "c64248d9bc2cd5a7682e16e51f8827d48ddd721d",
+      "addedAt": "2026-10-11T03:47:46+06:00"
+    },
+    {
       "id": "5c9840bffa03",
       "name": "serve document downloads with explicit format and filename",
       "description": "Added by main-branch commit 5c9840b. See update history for changed files and deployment status.",
@@ -131,6 +139,18 @@
     }
   ],
   "updates": [
+    {
+      "id": "c64248d9bc2cd5a7682e16e51f8827d48ddd721d",
+      "commit": "c64248d9bc2cd5a7682e16e51f8827d48ddd721d",
+      "title": "feat: add DOCX and PDF document export dependencies",
+      "date": "2026-10-11T03:47:46+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/c64248d9bc2cd5a7682e16e51f8827d48ddd721d",
+      "features": [
+        "add DOCX and PDF document export dependencies"
+      ],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
     {
       "id": "fcf631448c715022273b651a2d69aa501dcf9da8",
       "commit": "fcf631448c715022273b651a2d69aa501dcf9da8",
