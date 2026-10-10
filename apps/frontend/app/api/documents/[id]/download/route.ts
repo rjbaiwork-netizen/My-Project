@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { projectDocuments, type DocumentFormat } from "../../../../lib/project-documents";
+import { projectDocuments, type DocumentFormat } from "../../../../../lib/project-documents";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
