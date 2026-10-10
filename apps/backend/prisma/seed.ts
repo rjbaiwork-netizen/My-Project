@@ -135,10 +135,11 @@ async function main() {
   for (const section of sections) {
     await prisma.cMSSection.upsert({
       where: { key: section.key },
+      // Seed must be idempotent without overwriting administrator changes.
+      // In particular, preserve isVisible and content for existing CMS sections.
       update: {
         title: section.title,
-        order: section.order,
-        isVisible: true
+        order: section.order
       },
       create: {
         key: section.key,

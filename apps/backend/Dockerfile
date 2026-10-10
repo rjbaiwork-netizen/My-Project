@@ -30,6 +30,9 @@ COPY --from=builder /app/apps/backend/src ./apps/backend/src
 COPY --from=builder /app/apps/backend/generated ./apps/backend/generated
 COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
 COPY --from=builder /app/apps/backend/prisma.config.ts ./apps/backend/prisma.config.ts
+# Preserve the workspace target for @my-project/shared in the runtime image.
+COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 4000
