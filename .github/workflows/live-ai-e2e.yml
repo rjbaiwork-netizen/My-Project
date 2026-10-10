@@ -45,19 +45,18 @@ jobs:
           set -euo pipefail
           READY=0
           for i in {1..36}; do
-            if curl -fsS --max-time 10 "$FRONTEND_URL/api/admin/sections" >/tmp/admin-sections.json; then
-              if node -e 'const x=require("/tmp/admin-sections.json");process.exit(x.success===true&&Array.isArray(x.data)&&x.data.length>=10?0:1)'; then READY=1; break; fi
-            fi
-            echo "Waiting for Render frontend/admin proxy ($i/36)"
+            if curl -fsS --max-time 10 "$FRONTEND_URL/" >/tmp/homepage.html; then READY=1; break; fi
+            echo "Waiting for Render public homepage ($i/36)"
             sleep 10
           done
-          test "$READY" -eq 1 || { cat /tmp/admin-sections.json 2>/dev/null || true; exit 1; }
+          test "$READY" -eq 1 || { cat /tmp/homepage.html 2>/dev/null || true; exit 1; }
 
           node <<'NODE'
           const api = process.env.API_BASE.replace(/\/$/, "");
           const front = process.env.FRONTEND_URL.replace(/\/$/, "");
+          let sessionCookie = "";
           async function get(url) {
-            const r = await fetch(url, { cache: "no-store" });
+            const r = await fetch(url, { headers: sessionCookie ? { cookie: sessionCookie } : {}, cache: "no-store" });
             const raw = await r.text();
             let body;
             try { body = JSON.parse(raw); } catch { body = null; }
@@ -67,7 +66,7 @@ jobs:
           async function send(url, method, body) {
             const r = await fetch(url, {
               method,
-              headers: { "content-type": "application/json" },
+              headers: { "content-type": "application/json", origin: new URL(url).origin, ...(sessionCookie ? { cookie: sessionCookie } : {}) },
               body: JSON.stringify(body),
               cache: "no-store"
             });
@@ -86,14 +85,34 @@ jobs:
           if (!publicSections.body.data.some(s => s.isVisible === true)) throw new Error("No visible CMS section exists; public homepage would remain empty");
           console.log(`PASS backend health + public CMS: ${publicSections.body.data.length} sections, ${publicSections.body.data.filter(s=>s.isVisible).length} visible`);
 
-          const admin = await get(front + "/api/admin/sections");
-          if (admin.body?.success !== true || !Array.isArray(admin.body.data) || admin.body.data.length < 10) throw new Error("Render-to-Railway authenticated admin proxy contract failed");
-          const section = admin.body.data[0];
-          const updated = await send(front + "/api/admin/sections/" + encodeURIComponent(section.id), "PATCH", { title: section.title, content: section.content });
-          if (updated.data?.id !== section.id || updated.data?.title !== section.title) throw new Error("CMS section update round-trip failed");
-          const visibility = await send(front + "/api/admin/sections/" + encodeURIComponent(section.id) + "/visibility", "PATCH", { isVisible: section.isVisible });
-          if (visibility.data?.isVisible !== section.isVisible) throw new Error("CMS visibility round-trip failed");
-          console.log("PASS Render admin proxy + non-destructive CMS update + visibility round-trip");
+          if (!process.env.ADMIN_LOGIN_PASSWORD) {
+            const denied = await fetch(front + "/api/admin/sections", { cache: "no-store" });
+            if (denied.status !== 401) throw new Error("Unauthenticated CMS admin access must return HTTP 401");
+            console.log("PASS CMS admin API rejects unauthenticated requests; authenticated CRUD E2E skipped because ADMIN_LOGIN_PASSWORD Actions secret is not configured");
+          } else {
+            const login = await fetch(front + "/api/admin/login", {
+              method: "POST",
+              headers: { "content-type": "application/json", origin: front },
+              body: JSON.stringify({ password: process.env.ADMIN_LOGIN_PASSWORD }),
+              cache: "no-store"
+            });
+            if (!login.ok) throw new Error("CMS E2E admin login failed with HTTP " + login.status);
+            const setCookie = login.headers.get("set-cookie") || "";
+            const match = setCookie.match(/my_project_admin_session=([^;]+)/);
+            if (!match) throw new Error("CMS E2E login did not issue the expected session cookie");
+            sessionCookie = "my_project_admin_session=" + match[1];
+            const session = await fetch(front + "/api/admin/session", { headers: { cookie: sessionCookie }, cache: "no-store" });
+            const sessionState = await session.json();
+            if (!session.ok || sessionState.authenticated !== true) throw new Error("CMS E2E admin session verification failed");
+            const admin = await get(front + "/api/admin/sections");
+            if (admin.body?.success !== true || !Array.isArray(admin.body.data) || admin.body.data.length < 10) throw new Error("Authenticated CMS admin proxy contract failed");
+            const section = admin.body.data[0];
+            const updated = await send(front + "/api/admin/sections/" + encodeURIComponent(section.id), "PATCH", { title: section.title, content: section.content });
+            if (updated.data?.id !== section.id || updated.data?.title !== section.title) throw new Error("CMS section update round-trip failed");
+            const visibility = await send(front + "/api/admin/sections/" + encodeURIComponent(section.id) + "/visibility", "PATCH", { isVisible: section.isVisible });
+            if (visibility.data?.isVisible !== section.isVisible) throw new Error("CMS visibility round-trip failed");
+            console.log("PASS authenticated CMS admin proxy + non-destructive update + visibility round-trip");
+          }
 
           const home = await get(front + "/");
           if (!home.raw.includes("This site is being prepared") && !home.raw.includes("No published content")) {
