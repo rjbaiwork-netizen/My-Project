@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "0c5c6976cb19",
+      "name": "generate downloadable DOCX and PDF reports",
+      "description": "Added by main-branch commit 0c5c697. See update history for changed files and deployment status.",
+      "source": "GitHub main commit",
+      "commit": "0c5c6976cb19e5006969c8043e545a46ef7335f8",
+      "addedAt": "2026-10-11T03:48:24+06:00"
+    },
+    {
       "id": "171cfcf49860",
       "name": "enable Word and PDF document formats",
       "description": "Added by main-branch commit 171cfcf. See update history for changed files and deployment status.",
@@ -155,6 +163,18 @@
     }
   ],
   "updates": [
+    {
+      "id": "0c5c6976cb19e5006969c8043e545a46ef7335f8",
+      "commit": "0c5c6976cb19e5006969c8043e545a46ef7335f8",
+      "title": "feat: generate downloadable DOCX and PDF reports",
+      "date": "2026-10-11T03:48:24+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/0c5c6976cb19e5006969c8043e545a46ef7335f8",
+      "features": [
+        "generate downloadable DOCX and PDF reports"
+      ],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
     {
       "id": "171cfcf49860290b4b3c9b7bb43a7e59a56433d6",
       "commit": "171cfcf49860290b4b3c9b7bb43a7e59a56433d6",
