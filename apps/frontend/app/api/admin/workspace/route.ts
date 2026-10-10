@@ -1,3 +1,4 @@
+import { sameOrigin, verifyAdminSession } from "../../../../../lib/adminSession";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -9,7 +10,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 async function forward(method: string, body?: string) {
-  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  if (request.method !== "GET" && request.method !== "HEAD" && !sameOrigin(request)) return NextResponse.json({ success: false, error: { message: "Invalid request origin." } }, { status: 403, headers: { "Cache-Control": "no-store" } });
+  if (!verifyAdminSession(request)) return NextResponse.json({ success: false, error: { message: "Administrator login is required." } }, { status: 401, headers: { "Cache-Control": "no-store" } });
+    const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
   const token = process.env.ADMIN_API_TOKEN;
   if (!base) return NextResponse.json({ success: false, error: { message: "NEXT_PUBLIC_API_URL is not configured." } }, { status: 503 });
   if (!token) return NextResponse.json({ success: false, error: { message: "Admin proxy authentication is not configured." } }, { status: 503 });
