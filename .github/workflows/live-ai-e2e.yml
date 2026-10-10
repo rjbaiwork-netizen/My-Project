@@ -86,15 +86,30 @@ jobs:
           console.log(`PASS backend health + public CMS: ${publicSections.body.data.length} sections, ${publicSections.body.data.filter(s=>s.isVisible).length} visible`);
 
           if (!process.env.ADMIN_LOGIN_PASSWORD) {
-            let denied;
-            for (let i = 0; i < 36; i++) {
-              denied = await fetch(front + "/api/admin/sections", { cache: "no-store" });
-              if (denied.status === 401) break;
-              console.log("Waiting for the latest Render CMS admin security deployment (" + (i + 1) + "/36); HTTP " + denied.status);
-              await new Promise(resolve => setTimeout(resolve, 10000));
+            const adminSecurityChecks = [
+              { path: "/api/admin/sections", method: "GET" },
+              { path: "/api/admin/workspace", method: "GET" },
+              { path: "/api/admin/monitor", method: "GET" },
+              { path: "/api/admin/sections/security-probe", method: "PATCH" },
+              { path: "/api/admin/workspace", method: "PATCH" }
+            ];
+            for (const check of adminSecurityChecks) {
+              let denied;
+              for (let i = 0; i < 36; i++) {
+                denied = await fetch(front + check.path, {
+                  method: check.method,
+                  headers: check.method === "PATCH" ? { origin: front, "content-type": "application/json" } : {},
+                  body: check.method === "PATCH" ? JSON.stringify({ title: "security-probe", content: {} }) : undefined,
+                  cache: "no-store"
+                });
+                if (denied.status === 401) break;
+                console.log("Waiting for the latest Render admin security deployment on " + check.path + " (" + (i + 1) + "/36); HTTP " + denied.status);
+                await new Promise(resolve => setTimeout(resolve, 10000));
+              }
+              if (denied?.status !== 401) throw new Error("Unauthenticated admin access to " + check.path + " (" + check.method + ") must return HTTP 401 after deployment; got " + denied?.status);
+              console.log("PASS unauthenticated admin access blocked: " + check.method + " " + check.path);
             }
-            if (denied?.status !== 401) throw new Error("Unauthenticated CMS admin access must return HTTP 401 after deployment; got " + denied?.status);
-            console.log("PASS CMS admin API rejects unauthenticated requests; authenticated CRUD E2E skipped because ADMIN_LOGIN_PASSWORD Actions secret is not configured");
+            console.log("Authenticated CMS CRUD E2E skipped because ADMIN_LOGIN_PASSWORD Actions secret is not configured");
           } else {
             const login = await fetch(front + "/api/admin/login", {
               method: "POST",
