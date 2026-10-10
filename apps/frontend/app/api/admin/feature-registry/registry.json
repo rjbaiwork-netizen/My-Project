@@ -132,6 +132,16 @@
   ],
   "updates": [
     {
+      "id": "f54db54210936e8b799fc5170d3fadf28f221902",
+      "commit": "f54db54210936e8b799fc5170d3fadf28f221902",
+      "title": "fix: correct document catalog import path",
+      "date": "2026-10-11T03:42:59+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/f54db54210936e8b799fc5170d3fadf28f221902",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "5c9840bffa03e0f65c81dc139f554739447f1a36",
       "commit": "5c9840bffa03e0f65c81dc139f554739447f1a36",
       "title": "feat: serve document downloads with explicit format and filename",
