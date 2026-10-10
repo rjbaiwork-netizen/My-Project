@@ -49,7 +49,7 @@ export default function AIChatInterfacePage(){
       let control:any=null;
       if(controlResponse.status===503){
         const disabled=await controlResponse.clone().json().catch(()=>null);
-        if(disabled?.error?.message!=="AI Control proxy is disabled by configuration.") control=await readJson(controlResponse);
+        if(disabled?.error?.message!=="AI Control proxy is disabled by configuration." || confirm) control=await readJson(controlResponse);
       }else{
         control=await readJson(controlResponse);
       }
