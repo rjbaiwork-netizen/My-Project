@@ -13,7 +13,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "test:security": "node --import tsx --test src/middleware/adminAuth.test.ts src/lib/confirmationStore.test.ts"
+    "test:security": "node --import tsx --test src/middleware/adminAuth.test.ts src/lib/confirmationStore.test.ts ../../apps/frontend/lib/loginRateLimit.test.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
