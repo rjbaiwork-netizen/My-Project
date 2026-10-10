@@ -38,28 +38,27 @@ export default function AIChatInterfacePage(){
     const value=(controlMessage??message).trim();if(!value||loading)return;
     setLoading(true);setError("");
     try{
-      let controlResponse=await fetch("/api/ai/control-chat",{
+      const controlResponse=await fetch("/api/ai/control-chat",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify(confirm?{message:value,confirm,confirmationId}:{message:value,confirm}),
         cache:"no-store"
       });
-      if((controlResponse.status===404||controlResponse.status===502||controlResponse.status===503||controlResponse.status===504)&&!confirm){
-        await new Promise(resolve=>setTimeout(resolve,600));
-        controlResponse=await fetch("/api/ai/control-chat",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({message:value,confirm}),
-          cache:"no-store"
-        });
+      // Never automatically replay a control POST after a timeout/5xx: the backend may already have executed it.
+      // Only the explicit "disabled" response falls through to ordinary chat; all other failures stay visible.
+      let control:any=null;
+      if(controlResponse.status===503){
+        const disabled=await controlResponse.clone().json().catch(()=>null);
+        if(disabled?.error?.message!=="AI Control proxy is disabled by configuration.") control=await readJson(controlResponse);
+      }else{
+        control=await readJson(controlResponse);
       }
-      const control=await readJson(controlResponse);
-      if(control.data?.mode==="action_preview"){
+      if(control?.data?.mode==="action_preview"){
         setPendingControl({message:value,action:control.data.action,confirmationId:control.data.confirmationId});
         setMessages(m=>[...m,{id:`u-${Date.now()}`,role:"user",content:value,createdAt:new Date().toISOString()},{id:`p-${Date.now()+1}`,role:"assistant",content:`আমি এই actionটি করতে প্রস্তুত: ${JSON.stringify(control.data.action,null,2)}\n\nConfirm চাপলে এটি execute হবে.`,createdAt:new Date().toISOString()}]);
         setMessage(""); return;
       }
-      if(control.data?.mode==="executed"){
+      if(control?.data?.mode==="executed"){
         setPendingControl(null);
         setMessages(m=>[...m,{id:`u-${Date.now()}`,role:"user",content:value,createdAt:new Date().toISOString()},{id:`x-${Date.now()+1}`,role:"assistant",content:control.data.summary??"Action completed.",createdAt:new Date().toISOString()}]);
         setMessage(""); return;
