@@ -10,6 +10,8 @@ export async function controlChat(req:Request,res:Response){
   if(!planned.action)return res.json({success:true,data:{mode:"conversation",action:null}});
   if(actionNeedsConfirmation(planned.action)&&req.body?.confirm!==true)
    return res.json({success:true,data:{mode:"action_preview",action:planned.action,requiresConfirmation:true}});
+  if(actionNeedsConfirmation(planned.action)&&req.body?.confirm===true)
+   return res.status(409).json({success:false,error:{message:"Confirmation is not bound to a server-stored action yet. No action was executed; secure confirmation workflow is required."}});
   const result=await executeChatControl(planned.action);
   const summary=await describeControlResult(planned.action,result);
   res.json({success:true,data:{mode:"executed",action:planned.action,result,summary}});
