@@ -143,7 +143,7 @@ export default function ChatInterfaceWorkPlanPage() {
               <li>Backend AI route-এ bearer-token authorization-এর missing token, wrong token ও valid token test যোগ করা হয়েছে; CI workflow-তে security test চালানো যুক্ত হয়েছে।</li>
               <li>Admin login-এ প্রতি client key-তে ১৫ মিনিটে ৫টি failed attempt-এর পর 429/Retry-After যোগ হয়েছে; সঠিক login হলে ওই key-এর failure counter reset হয়। এটি process-local limiter, তাই multi-instance/edge-level rate limit-এর বিকল্প নয়।</li>
               <li>Chat Interface-এ logout control যোগ হয়েছে; Cancel চাপলে server-side pending confirmation consumed/revoked হয়। Confirmation-এর exact action server-side record থেকেই execute হয় এবং একবারই consume করা যায়।</li>
-              <li>এগুলো এখনো branch/PR-এর পরিবর্তন; automated CI PASS না হওয়া পর্যন্ত test pass বলা যাবে না। Browser E2E, database migration, replay/concurrency integration test এবং production smoke test আলাদা করে বাকি।</li>
+              <li>GitHub Actions Run #18 PASS: shared/frontend/backend build, backend bearer-auth tests, confirmation replay/concurrency/expiry unit tests, login rate-limit tests এবং Prisma schema validation। <a href="https://github.com/rjbaiwork-netizen/My-Project/actions/runs/38073461954" className="text-blue-300 underline">Run #18-এর ফলাফল দেখুন</a>। Browser E2E, real-database migration/integration test এবং production smoke test এখনো বাকি।</li>
               <li>Render/Railway secrets বা migration পরিবর্তন করা হয়নি; main-এ merge এবং production deployment করা হয়নি।</li>
             </ul>
           </section>
