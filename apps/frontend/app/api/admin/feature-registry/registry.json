@@ -116,6 +116,16 @@
   ],
   "updates": [
     {
+      "id": "8cafbf9bb4a1e22a040fe69d7e2f27ad9db31a6a",
+      "commit": "8cafbf9bb4a1e22a040fe69d7e2f27ad9db31a6a",
+      "title": "fix: force report attachment download instead of HTML save",
+      "date": "2026-10-11T03:40:11+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/8cafbf9bb4a1e22a040fe69d7e2f27ad9db31a6a",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "2ba5161c95e620fdf144f81fe8b0cdb1c62e2f11",
       "commit": "2ba5161c95e620fdf144f81fe8b0cdb1c62e2f11",
       "title": "fix: force report download with explicit attachment headers",
