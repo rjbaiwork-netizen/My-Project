@@ -1,6 +1,6 @@
 # Live System Monitor — platform API setup
 
-The Admin Monitor automatically displays application health, readiness, GitHub's public main commit, Feature Registry, and Update History. No separate `MONITOR_ACCESS_TOKEN` is required.
+The Admin Monitor automatically displays application health/readiness, integration configuration status, GitHub's public main commit and recent GitHub Actions runs, Render/Railway deployments and logs when authorized, rule-based diagnosis recommendations, Feature Registry, and Update History. No separate `MONITOR_ACCESS_TOKEN` is required.
 
 ## Render frontend service environment
 
@@ -24,6 +24,8 @@ For private platform deployment history and logs, set provider credentials on th
 - App health and the feature registry do not require a user-entered token.
 - Render and Railway API credentials are still required to retrieve private provider deployment history/logs. Without them, those cards show `Not connected`.
 - Provider tokens are used only server-side and are never returned to the browser.
+- API Connection Center reports only whether required credentials are configured; it never returns credential values. GitHub Actions run metadata is read from the repository's public Actions API; private-repository workflow data may need a server-side GitHub token in a future enhancement.
+- Automated Diagnosis uses explicit status rules to suggest checks. It is not a guaranteed root-cause analysis or an AI-generated diagnosis.
 - The monitor performs read-only checks; it does not trigger deployments, restart services, or mutate database data.
 - Render warning/error logs from the last 24 hours and Railway logs for recent failed deployments are shown when provider API access permits.
 - The monitoring and registry endpoints are readable without a separate monitor token. Do not put sensitive secrets or private personal data in the registry.
