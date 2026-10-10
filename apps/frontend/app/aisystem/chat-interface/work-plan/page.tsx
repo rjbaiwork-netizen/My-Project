@@ -194,6 +194,17 @@ export default function ChatInterfaceWorkPlanPage() {
             <p className="mt-3 text-sm leading-6 text-amber-100"><strong>Deploy-এর আগে বাধ্যতামূলক:</strong> Render frontend ও Railway backend-এ matching secrets configure করতে হবে, তারপর <code>ADMIN_CONTROL_PROXY_ENABLED=true</code> দিতে হবে। এই পরিবর্তন এখনও draft PR branch-এ; TypeScript/build/CI ও deployed login-flow verification বাকি।</p>
           </section>
 
+          <section className="mt-6 rounded-2xl border border-blue-400/25 bg-blue-400/5 p-5">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-blue-200">Phase 02 · API access coverage · 2026-10-10</p>
+            <h2 className="mt-2 text-xl font-bold">AI API-র সব route-এ server-side authorization</h2>
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-300">
+              <li>Backend <code>/api/ai/*</code> router-এর সব endpoint-এ <code>requireAdminAuth</code> প্রয়োগ করা হয়েছে—conversation/history, chat, agents, memory, knowledge, automation ও provider route-সহ।</li>
+              <li>Frontend Chat Interface-এর API call এখন একই-origin <code>/api/ai/*</code> proxy ব্যবহার করে। Proxy signed admin session যাচাই করে এবং server-side bearer token backend-এ পাঠায়।</li>
+              <li>Unauthenticated direct backend request প্রত্যাখ্যাত হওয়ার কথা; frontend token browser JavaScript-এ প্রকাশ করে না।</li>
+            </ul>
+            <p className="mt-3 text-sm leading-6 text-amber-100"><strong>পরবর্তী যাচাই:</strong> build/typecheck, missing/invalid token tests, login-cookie tests, all Chat/History/Agent flows, backend readiness এবং deployed smoke tests। Proxy ব্যবহার করতে Render-এ সঠিক secret configure করতে হবে; deployment-এর আগে কোনো secret commit করা যাবে না।</p>
+          </section>
+
           <section className="mt-6 rounded-2xl border border-white/10 bg-slate-900/70 p-5">
             <h2 className="text-xl font-bold">মূল দিকনির্দেশনা</h2>
             <p className="mt-3 leading-7 text-slate-300">
