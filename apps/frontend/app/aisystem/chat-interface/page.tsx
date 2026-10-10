@@ -17,7 +17,7 @@ async function readJson(r:Response){
 }
 
 export default function AIChatInterfacePage(){
-  const base=(process.env.NEXT_PUBLIC_API_URL??"").replace(/\/$/,"");
+  const base="";
   const [conversations,setConversations]=useState<Conversation[]>([]);
   const [conversationId,setConversationId]=useState<string>();
   const [messages,setMessages]=useState<Message[]>([]);
