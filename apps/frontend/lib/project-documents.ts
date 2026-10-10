@@ -1,4 +1,4 @@
-export type DocumentFormat = "md" | "txt" | "html";
+export type DocumentFormat = "md" | "txt" | "html" | "docx" | "pdf";
 
 export type ProjectDocument = {
   id: string;
@@ -17,9 +17,9 @@ export const projectDocuments: ProjectDocument[] = [
       "প্রকল্পের architecture, CMS, Admin/Security, AI, automation, পূর্বের audit snapshot ও roadmap.",
     filename: "my-project-full-blueprint-bn.md",
     category: "Blueprint ও Audit",
-    formats: ["md", "txt", "html"],
+    formats: ["md", "txt", "html", "docx", "pdf"],
   },
 ];
 
-// নতুন ডকুমেন্ট যোগ করতে public/docs/ ফোল্ডারে ফাইল রাখুন,
-// তারপর এই তালিকায় একটি entry যোগ করুন। নিরাপত্তার জন্য API শুধু এই তালিকাভুক্ত ফাইলই পরিবেশন করে।
+// নতুন ডকুমেন্ট যোগ করতে public/docs/ ফোল্ডারে Markdown source রাখুন,
+// তারপর এই তালিকায় entry যোগ করুন। DOCX ও PDF source থেকে API-তে তৈরি হয়।
