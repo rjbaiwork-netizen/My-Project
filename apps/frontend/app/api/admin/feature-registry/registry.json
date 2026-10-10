@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "operations-connection-diagnostics",
+      "name": "Operations Connection Center & Automated Diagnosis",
+      "description": "একই Admin Monitor-এ API credentials configured কি না (শুধু boolean), GitHub Actions-এর সাম্প্রতিক workflow runs, health/readiness-ভিত্তিক rule diagnosis ও করণীয় দেখায়; সব checks read-only।",
+      "source": "Admin Monitor update",
+      "commit": "",
+      "addedAt": "2026-10-10T13:32:38.016Z"
+    },
+    {
       "id": "62b7a530208d",
       "name": "add registry search and view filters (#37)",
       "description": "Added by main-branch commit 62b7a53. See update history for changed files and deployment status.",
@@ -83,6 +91,25 @@
     }
   ],
   "updates": [
+    {
+      "id": "operations-connection-diagnostics",
+      "commit": "",
+      "title": "feat: integrate API connection center, GitHub Actions timeline and rule-based diagnosis",
+      "date": "2026-10-10T13:32:38.020Z",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project",
+      "features": [
+        "API Connection Center",
+        "GitHub Actions timeline",
+        "Automated Diagnosis",
+        "Readiness and incident alerts"
+      ],
+      "changedFiles": [
+        "apps/frontend/app/admin/monitoring/page.tsx",
+        "apps/frontend/app/api/admin/monitor/route.ts",
+        "docs/LIVE_SYSTEM_MONITOR.md"
+      ],
+      "deploymentStatus": "Changes are in the feature branch; deployment not yet verified"
+    },
     {
       "id": "62b7a530208d4bad42b6e0cb965bc3c2197b6a70",
       "commit": "62b7a530208d4bad42b6e0cb965bc3c2197b6a70",
