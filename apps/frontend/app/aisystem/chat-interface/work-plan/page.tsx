@@ -136,6 +136,40 @@ export default function ChatInterfaceWorkPlanPage() {
             </p>
           </header>
 
+          <section className="mt-6 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-5">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-amber-300">Phase 01 Audit Record · 2026-10-10</p>
+            <h2 className="mt-2 text-xl font-bold">প্রাথমিক অডিটের ফলাফল</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              GitHub main-এর Chat UI, control-chat proxy, AI controller, aiRoutes, adminAuth ও AI control planner কোড পর্যালোচনা করা হয়েছে।
+              Render deployment log-এ Work Plan commit-এর service live হওয়ার বার্তা আছে। তবে এই অডিট পরিবেশ থেকে public URL-এ সরাসরি browser/HTTP access DNS ব্যর্থতার কারণে যাচাই করা যায়নি।
+            </p>
+            <div className="mt-4 space-y-3">
+              <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-3">
+                <p className="font-semibold text-red-200">P0 — Confirmation action-এর সঙ্গে বাঁধা নয়</p>
+                <p className="mt-1 text-sm leading-6 text-slate-300">UI pending action সংরক্ষণ করলেও Confirm-এ শুধু মূল message আবার পাঠানো হয়; backend action পুনরায় পরিকল্পনা করে এবং confirm=true হলে নতুন action execute করতে পারে। Fix: preview-তে দেখানো একই action/parameters-কে server-side signed বা stored confirmation token দিয়ে bind করতে হবে।</p>
+              </div>
+              <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-3">
+                <p className="font-semibold text-red-200">P0 — AI management API authentication audit blocker</p>
+                <p className="mt-1 text-sm leading-6 text-slate-300">aiRoutes-এ requireAdminAuth কেবল providers ও control-chat route group-এ দৃশ্যমান; Knowledge, Memory, Agent ও Automation-এর বহু route-এ route-level protection দেখা যায়নি। Production-এ unauthorized request দিয়ে পরীক্ষা করা হয়নি। Mutation endpoint-গুলোকে protected বলে প্রমাণিত না করা পর্যন্ত security verification অসম্পূর্ণ।</p>
+              </div>
+              <div className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-3">
+                <p className="font-semibold text-amber-100">P1 — Control planner failure সাধারণ Chat-এ fallback করে</p>
+                <p className="mt-1 text-sm leading-6 text-slate-300">Planner error হলে action=null ফেরে; UI সাধারণ Chat-এ চলে যেতে পারে। Control intent ব্যর্থ হলে স্পষ্ট error ও retry path দেখাতে হবে।</p>
+              </div>
+              <div className="rounded-xl border border-amber-300/20 bg-amber-300/5 p-3">
+                <p className="font-semibold text-amber-100">P1 — Control action history স্থায়ী নয়</p>
+                <p className="mt-1 text-sm leading-6 text-slate-300">Preview ও execution result local UI message হিসেবে যোগ হয়; সাধারণ conversation/message persistence-এর সঙ্গে যুক্ত নয়। Refresh/reopen-এ action history হারাতে পারে।</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                <p className="font-semibold">Production test evidence</p>
+                <p className="mt-1 text-sm leading-6 text-slate-300">GitHub Actions run 38062358285-এর বিদ্যমান রিপোর্টে CMS smoke test, AI Agent execution, Knowledge/Memory/Chat API E2E ও provider diagnostics PASS ছিল। এটি Work Plan deployment-এর আগের run এবং browser-level Chat confirmation/security test নয়।</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-6 text-slate-200">
+              <strong>পরবর্তী gate:</strong> প্রথমে AI mutation route-গুলোর authentication boundary যাচাই ও সুরক্ষিত করা; তারপর confirmation-কে exact action-এর সঙ্গে bind করা। এর আগে production-এ destructive control action চালিয়ে পরীক্ষা করা যাবে না।
+            </p>
+          </section>
+
           <section className="mt-6 rounded-2xl border border-white/10 bg-slate-900/70 p-5">
             <h2 className="text-xl font-bold">মূল দিকনির্দেশনা</h2>
             <p className="mt-3 leading-7 text-slate-300">
