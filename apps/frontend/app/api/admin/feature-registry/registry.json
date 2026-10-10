@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "222ec031f85c",
+      "name": "add extensible project document catalog",
+      "description": "Added by main-branch commit 222ec03. See update history for changed files and deployment status.",
+      "source": "GitHub main commit",
+      "commit": "222ec031f85c55c3cdc0ea7bc25772647eba9750",
+      "addedAt": "2026-10-11T03:42:16+06:00"
+    },
+    {
       "id": "b3c250d03df9",
       "name": "make documents download link visible across frontend",
       "description": "Added by main-branch commit b3c250d. See update history for changed files and deployment status.",
@@ -115,6 +123,18 @@
     }
   ],
   "updates": [
+    {
+      "id": "222ec031f85c55c3cdc0ea7bc25772647eba9750",
+      "commit": "222ec031f85c55c3cdc0ea7bc25772647eba9750",
+      "title": "feat: add extensible project document catalog",
+      "date": "2026-10-11T03:42:16+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/222ec031f85c55c3cdc0ea7bc25772647eba9750",
+      "features": [
+        "add extensible project document catalog"
+      ],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
     {
       "id": "8cafbf9bb4a1e22a040fe69d7e2f27ad9db31a6a",
       "commit": "8cafbf9bb4a1e22a040fe69d7e2f27ad9db31a6a",
