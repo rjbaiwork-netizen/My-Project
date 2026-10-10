@@ -103,6 +103,67 @@ jobs:
           console.log("PASS public homepage and Admin System Configuration page");
           NODE
 
+      - name: Live AI Agent execution + Automation Builder diagnostics
+        env:
+          API_BASE: https://my-project-production-9cd9.up.railway.app
+          FRONTEND_URL: https://my-project-mk2x.onrender.com
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const api = process.env.API_BASE.replace(/\/$/, "");
+          const front = process.env.FRONTEND_URL.replace(/\/$/, "");
+          async function request(path, options = {}) {
+            const r = await fetch(api + path, {
+              ...options,
+              headers: { "content-type": "application/json", ...(options.headers || {}) }
+            });
+            const raw = await r.text();
+            let body;
+            try { body = JSON.parse(raw); } catch { body = null; }
+            if (!r.ok) throw new Error(`${options.method || "GET"} ${path} -> HTTP ${r.status}: ${raw.slice(0,300)}`);
+            return body;
+          }
+
+          const diagnostic = await request("/api/ai/automations/diagnose", {
+            method: "POST",
+            body: JSON.stringify({
+              name: "Production E2E diagnostic",
+              trigger: { type: "manual" },
+              conditions: [{ field: "flag", operator: "equals", value: "ready" }],
+              actions: [{ type: "store-memory", content: "non-mutating-diagnostic-check" }]
+            })
+          });
+          if (diagnostic.success !== true || diagnostic.data?.valid !== true) throw new Error("Automation diagnostic endpoint failed");
+          const overview = await request("/api/ai/agent-automation");
+          if (overview.success !== true || !Array.isArray(overview.data?.agents) || !Array.isArray(overview.data?.automations)) throw new Error("Agent/automation workspace contract failed");
+
+          const agents = await request("/api/ai/agents");
+          const agent = agents.data?.find(a => a.status === "ACTIVE");
+          if (!agent) throw new Error("No active AI agent available for live execution");
+          const queued = await request(`/api/ai/agents/${agent.id}/run`, {
+            method: "POST",
+            body: JSON.stringify({ input: { source: "production-e2e", message: "Return a short confirmation that the production AI agent execution path works." } })
+          });
+          const runId = queued.data?.id;
+          if (queued.success !== true || !runId) throw new Error("AI agent run was not queued");
+          let finished;
+          for (let i = 0; i < 24; i++) {
+            const history = await request(`/api/ai/agents/${agent.id}/runs`);
+            finished = history.data?.find(run => run.id === runId);
+            if (finished?.status === "SUCCEEDED") break;
+            if (finished?.status === "FAILED") throw new Error(`AI agent execution failed: ${finished.error || "unknown"}`);
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+          if (finished?.status !== "SUCCEEDED" || !finished.output?.text) throw new Error("AI agent did not finish successfully");
+          console.log("PASS agent execution + run history + automation diagnosis + workspace overview");
+
+          for (const path of ["/aisystem/automation-builder", "/aisystem/agent-dashboard"]) {
+            const page = await fetch(front + path, { cache: "no-store" });
+            if (!page.ok) throw new Error(`Frontend ${path} returned HTTP ${page.status}`);
+            console.log(`PASS frontend route ${path}`);
+          }
+          NODE
+
       - name: Capture sanitized AI provider health diagnostics
         env:
           FRONTEND_URL: https://my-project-mk2x.onrender.com
