@@ -29,16 +29,15 @@ export default function DocumentsPage() {
             <div className="min-w-0 flex-1">
               <h2 className="text-xl font-semibold">My-Project — Full Blueprint ও Live Audit Report</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                বাংলা Markdown ডকুমেন্ট · Architecture, CMS, Admin/Security, AI, Automation,
+                বাংলা রিপোর্ট · Architecture, CMS, Admin/Security, AI, Automation,
                 পূর্বের audit metrics, roadmap এবং সম্ভাব্য monetization।
               </p>
               <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                 <a
-                  href="/docs/my-project-full-blueprint-bn.md"
-                  download="My-Project-Full-Blueprint-Live-Audit-BN.md"
+                  href="/api/download-report"
                   className="inline-flex min-h-12 items-center justify-center rounded-xl bg-blue-700 px-5 py-3 text-center font-semibold text-white hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
-                  ডাউনলোড করুন
+                  রিপোর্ট ডাউনলোড করুন (.md)
                 </a>
                 <a
                   href="/docs/my-project-full-blueprint-bn.md"
@@ -50,8 +49,8 @@ export default function DocumentsPage() {
                 </a>
               </div>
               <p className="mt-4 text-xs leading-5 text-slate-500">
-                নোট: ফাইলটি Markdown (.md) ফরম্যাটে। Microsoft Word বা Google Docs-এ নিতে ফাইলটি খুলে
-                লেখা কপি/ইমপোর্ট করতে পারবেন। রিপোর্টে থাকা metrics পূর্বের audit snapshot; তা বর্তমান live metrics নয়।
+                ডাউনলোড বাটনটি এখন attachment response ও নির্দিষ্ট .md filename ব্যবহার করে, যাতে রিপোর্টটি HTML হিসেবে সংরক্ষিত না হয়।
+                Word বা Google Docs-এ ব্যবহারের জন্য Markdown import/open করতে হবে। রিপোর্টের metrics পূর্বের audit snapshot; এগুলো বর্তমান live metrics নয়।
               </p>
             </div>
           </div>
