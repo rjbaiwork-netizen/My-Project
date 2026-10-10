@@ -100,6 +100,16 @@
   ],
   "updates": [
     {
+      "id": "916c0d69311e50bf7adacc05582bc5e033015e93",
+      "commit": "916c0d69311e50bf7adacc05582bc5e033015e93",
+      "title": "fix(frontend): correct admin workspace auth import",
+      "date": "2026-10-11T02:16:25+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/916c0d69311e50bf7adacc05582bc5e033015e93",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "390908ce2cce6d95d6a84b63a7ffa0fb8a15f275",
       "commit": "390908ce2cce6d95d6a84b63a7ffa0fb8a15f275",
       "title": "ci: test CMS admin through signed session",
