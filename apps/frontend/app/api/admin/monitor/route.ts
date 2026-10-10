@@ -274,6 +274,7 @@ export async function GET(request: NextRequest) {
     checkEndpoint(`${backendBase}/health`),
     checkEndpoint(`${backendBase}/ready`),
     getLatestCommit(),
+    getGitHubActions(),
     getRenderDeployments(),
     getRailwayDeployments()
   ]);
@@ -293,6 +294,14 @@ export async function GET(request: NextRequest) {
     database: { status: databaseStatus, checkedAt: readiness.checkedAt },
     aiWorker: { status: workerStatus, checkedAt: readiness.checkedAt },
     github: { status: latestCommit.status, latestCommit },
+    githubActions,
+    connectionCenter: {
+      backend: { configured: Boolean(backendBase && adminToken), status: backend.status },
+      github: { configured: true, status: latestCommit.status },
+      githubActions: { configured: true, status: githubActions.status },
+      render: { configured: Boolean(process.env.RENDER_API_KEY), status: render.status },
+      railway: { configured: Boolean(process.env.RAILWAY_PROJECT_TOKEN || process.env.RAILWAY_API_TOKEN), status: railway.status }
+    },
     integrations: { render, railway }
   }, { headers: { "Cache-Control": "no-store, no-cache, must-revalidate", "Vary": "Cookie, Authorization" } });
 }
