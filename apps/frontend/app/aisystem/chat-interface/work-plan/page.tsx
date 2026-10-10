@@ -182,6 +182,18 @@ export default function ChatInterfaceWorkPlanPage() {
             <p className="mt-3 text-sm leading-6 text-amber-100"><strong>এখনও যাচাই বাকি:</strong> GitHub build/CI, Prisma validate/generate, migration apply, concurrency/replay tests এবং authenticated frontend proxy। এই পরিবর্তনগুলো draft PR branch-এ আছে; main বা production-এ deploy করা হয়নি।</p>
           </section>
 
+          <section className="mt-6 rounded-2xl border border-blue-400/25 bg-blue-400/5 p-5">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-blue-200">Phase 02 · Admin session implementation · 2026-10-10</p>
+            <h2 className="mt-2 text-xl font-bold">Server-side admin session ও control proxy যুক্ত</h2>
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-300">
+              <li><code>/admin-login</code> page এবং <code>/api/admin/login</code>, <code>/api/admin/logout</code>, <code>/api/admin/session</code> endpoint যোগ করা হয়েছে।</li>
+              <li>Session token HMAC-SHA256 দিয়ে server-side sign হয়; cookie HttpOnly, Secure, SameSite=Strict এবং ৮ ঘণ্টা মেয়াদি। Origin check আছে।</li>
+              <li>AI Control proxy এখন session যাচাই করে, server-side <code>ADMIN_API_TOKEN</code> দিয়ে backend-এ অনুরোধ পাঠায়; browser-এ token প্রকাশ করা হয় না।</li>
+              <li>Environment variable template-এ <code>ADMIN_LOGIN_PASSWORD</code>, <code>ADMIN_SESSION_SECRET</code>, <code>ADMIN_API_TOKEN</code> ও <code>ADMIN_CONTROL_PROXY_ENABLED</code> নথিভুক্ত। কোনো বাস্তব secret repository-তে যোগ করা হয়নি।</li>
+            </ul>
+            <p className="mt-3 text-sm leading-6 text-amber-100"><strong>Deploy-এর আগে বাধ্যতামূলক:</strong> Render frontend ও Railway backend-এ matching secrets configure করতে হবে, তারপর <code>ADMIN_CONTROL_PROXY_ENABLED=true</code> দিতে হবে। এই পরিবর্তন এখনও draft PR branch-এ; TypeScript/build/CI ও deployed login-flow verification বাকি।</p>
+          </section>
+
           <section className="mt-6 rounded-2xl border border-white/10 bg-slate-900/70 p-5">
             <h2 className="text-xl font-bold">মূল দিকনির্দেশনা</h2>
             <p className="mt-3 leading-7 text-slate-300">
