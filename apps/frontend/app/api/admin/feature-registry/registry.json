@@ -100,6 +100,16 @@
   ],
   "updates": [
     {
+      "id": "390908ce2cce6d95d6a84b63a7ffa0fb8a15f275",
+      "commit": "390908ce2cce6d95d6a84b63a7ffa0fb8a15f275",
+      "title": "ci: test CMS admin through signed session",
+      "date": "2026-10-11T02:14:24+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/390908ce2cce6d95d6a84b63a7ffa0fb8a15f275",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "4f09638e6dd6e8128a017e03a409ff2552d6fc2b",
       "commit": "4f09638e6dd6e8128a017e03a409ff2552d6fc2b",
       "title": "fix(security): require admin session for CMS admin proxy",
