@@ -390,6 +390,25 @@ export default function ChatInterfaceWorkPlanPage() {
             </p>
           </section>
 
+          <section className="mt-8 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5">
+            <h2 className="text-xl font-bold">৮. Phase 02 Security ও Verification — চলমান</h2>
+            <p className="mt-3 leading-7 text-slate-300">
+              Branch <code>phase-02/ai-control-security</code>-এ admin session, same-origin API proxy,
+              backend AI-route bearer authorization এবং database-backed one-time confirmation-এর code যোগ করা হয়েছে।
+              এই পরিবর্তনগুলো এখনও draft PR #42-এ আছে; main branch বা production deployment-এ merge করা হয়নি।
+            </p>
+            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-slate-200">
+              <li>GitHub Actions-এ non-deploying Phase 02 validation workflow যোগ করা হয়েছে: shared/frontend/backend build এবং Prisma schema validation।</li>
+              <li>Workflow-এ শুধু placeholder DATABASE_URL ব্যবহৃত হবে; কোনো production database connection বা data mutation নয়।</li>
+              <li>এই মুহূর্তে branch-এর build, Prisma validation, login/session browser flow ও confirmation integration-এর PASS প্রমাণ নেই। Workflow result না আসা পর্যন্ত এগুলো unverified থাকবে।</li>
+              <li>Production চালুর আগে Render-এ ADMIN_LOGIN_PASSWORD, ADMIN_SESSION_SECRET (কমপক্ষে ৩২ অক্ষর), ADMIN_API_TOKEN এবং Railway-তে একই ADMIN_API_TOKEN configure করতে হবে। Secret কখনো GitHub-এ commit করা যাবে না।</li>
+              <li>Login endpoint-এর rate limiting এবং logout UI এখনও hardening backlog-এ আছে।</li>
+            </ul>
+            <p className="mt-4 border-t border-white/10 pt-4 font-semibold leading-7 text-white">
+              পরবর্তী ধাপ: CI ফলাফল পরীক্ষা → ব্যর্থ build/type/schema issue ঠিক করা → non-destructive auth/proxy tests → তারপরই review-এর জন্য প্রস্তুত করা। Merge/deploy আলাদা অনুমোদন ছাড়া হবে না।
+            </p>
+          </section>
+
           <footer className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5 text-sm text-slate-400">
             <span>Work plan reference: Chat Interface</span>
             <Link href="/aisystem/chat-interface" className="font-semibold text-blue-300 hover:text-blue-200">Chat Interface খুলুন →</Link>
