@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "b3c250d03df9",
+      "name": "make documents download link visible across frontend",
+      "description": "Added by main-branch commit b3c250d. See update history for changed files and deployment status.",
+      "source": "GitHub main commit",
+      "commit": "b3c250d03df98a47f3ff004b14915bad9f29c579",
+      "addedAt": "2026-10-11T03:35:32+06:00"
+    },
+    {
       "id": "65729d299a92",
       "name": "add documents page with blueprint report download",
       "description": "Added by main-branch commit 65729d2. See update history for changed files and deployment status.",
@@ -107,6 +115,18 @@
     }
   ],
   "updates": [
+    {
+      "id": "b3c250d03df98a47f3ff004b14915bad9f29c579",
+      "commit": "b3c250d03df98a47f3ff004b14915bad9f29c579",
+      "title": "feat: make documents download link visible across frontend",
+      "date": "2026-10-11T03:35:32+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/b3c250d03df98a47f3ff004b14915bad9f29c579",
+      "features": [
+        "make documents download link visible across frontend"
+      ],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
     {
       "id": "65729d299a92557ef30fb49874c70ecd126aaa0c",
       "commit": "65729d299a92557ef30fb49874c70ecd126aaa0c",
