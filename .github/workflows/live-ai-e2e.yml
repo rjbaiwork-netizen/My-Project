@@ -1,29 +1,109 @@
-name: Live AI E2E
+name: Live AI + CMS Production E2E
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "apps/frontend/app/api/admin/feature-registry/registry.json"
+
+permissions:
+  contents: read
 
 jobs:
-  live-ai-e2e:
+  live-production-e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Wait for Railway deployment
+      - name: Wait for Railway backend readiness
         env:
           API_BASE: https://my-project-production-9cd9.up.railway.app
         run: |
+          set -euo pipefail
+          READY=0
           for i in {1..36}; do
-            if curl -fsS "$API_BASE/health" >/tmp/health.json; then
-              echo "Backend healthy"
-              cat /tmp/health.json
-              exit 0
+            if curl -fsS --max-time 10 "$API_BASE/ready" >/tmp/ready.json; then
+              if node -e 'const x=require("/tmp/ready.json");process.exit(x.status==="ready"&&x.database==="ready"&&x.worker?.started===true?0:1)'; then
+                cat /tmp/ready.json
+                READY=1
+                break
+              fi
             fi
-            echo "Waiting for backend... attempt $i/36"
+            echo "Waiting for backend/database/worker readiness ($i/36)"
             sleep 10
           done
-          echo "Backend did not become healthy"
-          exit 1
+          test "$READY" -eq 1 || { cat /tmp/ready.json 2>/dev/null || true; exit 1; }
 
-      - name: Run live AI Chat + Knowledge + Memory E2E
+      - name: Live CMS and frontend integration smoke test
+        env:
+          API_BASE: https://my-project-production-9cd9.up.railway.app
+          FRONTEND_URL: https://my-project-mk2x.onrender.com
+        run: |
+          set -euo pipefail
+          READY=0
+          for i in {1..36}; do
+            if curl -fsS --max-time 10 "$FRONTEND_URL/api/admin/sections" >/tmp/admin-sections.json; then
+              if node -e 'const x=require("/tmp/admin-sections.json");process.exit(x.success===true&&Array.isArray(x.data)&&x.data.length>=10?0:1)'; then READY=1; break; fi
+            fi
+            echo "Waiting for Render frontend/admin proxy ($i/36)"
+            sleep 10
+          done
+          test "$READY" -eq 1 || { cat /tmp/admin-sections.json 2>/dev/null || true; exit 1; }
+
+          node <<'NODE'
+          const api = process.env.API_BASE.replace(/\/$/, "");
+          const front = process.env.FRONTEND_URL.replace(/\/$/, "");
+          async function get(url) {
+            const r = await fetch(url, { cache: "no-store" });
+            const raw = await r.text();
+            let body;
+            try { body = JSON.parse(raw); } catch { body = null; }
+            if (!r.ok) throw new Error(`GET ${url} -> HTTP ${r.status}: ${raw.slice(0,300)}`);
+            return { r, raw, body };
+          }
+          async function send(url, method, body) {
+            const r = await fetch(url, {
+              method,
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify(body),
+              cache: "no-store"
+            });
+            const raw = await r.text();
+            let payload;
+            try { payload = JSON.parse(raw); } catch { payload = null; }
+            if (!r.ok || payload?.success !== true) throw new Error(`${method} ${url} -> HTTP ${r.status}: ${raw.slice(0,400)}`);
+            return payload;
+          }
+
+          const health = await get(api + "/health");
+          if (health.body?.status !== "ok") throw new Error("Backend health contract failed");
+          const publicSections = await get(api + "/api/sections");
+          if (publicSections.body?.success !== true || !Array.isArray(publicSections.body.data)) throw new Error("Backend public CMS endpoint contract failed");
+          if (publicSections.body.data.length < 10) throw new Error(`Expected 10 seeded CMS sections; got ${publicSections.body.data.length}`);
+          if (!publicSections.body.data.some(s => s.isVisible === true)) throw new Error("No visible CMS section exists; public homepage would remain empty");
+          console.log(`PASS backend health + public CMS: ${publicSections.body.data.length} sections, ${publicSections.body.data.filter(s=>s.isVisible).length} visible`);
+
+          const admin = await get(front + "/api/admin/sections");
+          if (admin.body?.success !== true || !Array.isArray(admin.body.data) || admin.body.data.length < 10) throw new Error("Render-to-Railway authenticated admin proxy contract failed");
+          const section = admin.body.data[0];
+          const updated = await send(front + "/api/admin/sections/" + encodeURIComponent(section.id), "PATCH", { title: section.title, content: section.content });
+          if (updated.data?.id !== section.id || updated.data?.title !== section.title) throw new Error("CMS section update round-trip failed");
+          const visibility = await send(front + "/api/admin/sections/" + encodeURIComponent(section.id) + "/visibility", "PATCH", { isVisible: section.isVisible });
+          if (visibility.data?.isVisible !== section.isVisible) throw new Error("CMS visibility round-trip failed");
+          console.log("PASS Render admin proxy + non-destructive CMS update + visibility round-trip");
+
+          const home = await get(front + "/");
+          if (!home.raw.includes("This site is being prepared") && !home.raw.includes("No published content")) {
+            console.log("PASS public homepage returns published page content");
+          } else {
+            throw new Error("Public homepage still displays the no-published-content placeholder");
+          }
+          const adminPage = await fetch(front + "/admin/system-config", { cache: "no-store" });
+          if (!adminPage.ok) throw new Error(`Admin System Configuration page returned HTTP ${adminPage.status}`);
+          console.log("PASS public homepage and Admin System Configuration page");
+          NODE
+
+      - name: Live AI Chat + Knowledge + Memory E2E
         env:
           API_BASE: https://my-project-production-9cd9.up.railway.app
         run: |
@@ -59,148 +139,55 @@ jobs:
 
           try {
             const marker = "LIVE-E2E-" + Date.now();
-
             const conversations = await request("/api/ai/conversations");
-            if (conversations.success !== true || !Array.isArray(conversations.data)) {
-              throw new Error("Conversation list contract failed");
-            }
-
+            if (conversations.success !== true || !Array.isArray(conversations.data)) throw new Error("Conversation list contract failed");
             const knowledge = await request("/api/ai/knowledge");
-            if (knowledge.success !== true || !Array.isArray(knowledge.data)) {
-              throw new Error("Knowledge list contract failed");
-            }
+            if (knowledge.success !== true || !Array.isArray(knowledge.data)) throw new Error("Knowledge list contract failed");
 
-            const knowledgeCreate = await request("/api/ai/knowledge", {
-              method: "POST",
-              body: JSON.stringify({
-                title: `Live E2E Knowledge ${marker}`,
-                content: `Verified knowledge phrase for ${marker}: My-Project AI core integration test.`,
-                source: "live-e2e"
-              })
-            });
+            const knowledgeCreate = await request("/api/ai/knowledge", { method: "POST", body: JSON.stringify({
+              title: `Live E2E Knowledge ${marker}`,
+              content: `Verified knowledge phrase for ${marker}: My-Project AI core integration test.`,
+              source: "live-e2e"
+            })});
             const knowledgeId = knowledgeCreate.data?.id;
-            if (knowledgeCreate.success !== true || !knowledgeId || !knowledgeCreate.data?.embedding) {
-              throw new Error("Knowledge creation/indexing contract failed");
-            }
+            if (knowledgeCreate.success !== true || !knowledgeId || !knowledgeCreate.data?.embedding) throw new Error("Knowledge creation/indexing contract failed");
             ids.knowledge.push(knowledgeId);
 
             const knowledgeSearch = await request("/api/ai/knowledge/search?q=" + encodeURIComponent(marker));
-            if (knowledgeSearch.success !== true || !knowledgeSearch.data?.some(k => k.id === knowledgeId)) {
-              throw new Error("Knowledge semantic search contract failed");
-            }
+            if (knowledgeSearch.success !== true || !knowledgeSearch.data?.some(k => k.id === knowledgeId)) throw new Error("Knowledge search contract failed");
+            const knowledgeUpdate = await request("/api/ai/knowledge/" + knowledgeId, { method: "PATCH", body: JSON.stringify({ content: `Updated verified knowledge phrase for ${marker}: integration update.` })});
+            if (knowledgeUpdate.success !== true || !knowledgeUpdate.data?.embedding) throw new Error("Knowledge update/re-index contract failed");
 
-            const knowledgeUpdate = await request("/api/ai/knowledge/" + knowledgeId, {
-              method: "PATCH",
-              body: JSON.stringify({
-                content: `Updated verified knowledge phrase for ${marker}: integration update.`
-              })
-            });
-            if (knowledgeUpdate.success !== true || !knowledgeUpdate.data?.embedding) {
-              throw new Error("Knowledge update/re-index contract failed");
-            }
-
-            const manualMemory = await request("/api/ai/memories", {
-              method: "POST",
-              body: JSON.stringify({
-                content: `Manual memory verification phrase ${marker} should be retrievable.`,
-                namespace: "live-e2e"
-              })
-            });
+            const manualMemory = await request("/api/ai/memories", { method: "POST", body: JSON.stringify({ content: `Manual memory verification phrase ${marker} should be retrievable.`, namespace: "live-e2e" })});
             const manualMemoryId = manualMemory.data?.id;
-            if (manualMemory.success !== true || !manualMemoryId || !manualMemory.data?.embedding) {
-              throw new Error("Manual memory creation/embedding contract failed");
-            }
+            if (manualMemory.success !== true || !manualMemoryId || !manualMemory.data?.embedding) throw new Error("Manual memory creation/embedding contract failed");
             ids.memories.push(manualMemoryId);
-
-            const memoryUpdate = await request("/api/ai/memories/" + manualMemoryId, {
-              method: "PATCH",
-              body: JSON.stringify({
-                content: `Updated manual memory verification phrase ${marker} remains retrievable.`
-              })
-            });
-            if (memoryUpdate.success !== true || !memoryUpdate.data?.embedding) {
-              throw new Error("Memory update/re-embedding contract failed");
-            }
-
+            const memoryUpdate = await request("/api/ai/memories/" + manualMemoryId, { method: "PATCH", body: JSON.stringify({ content: `Updated manual memory verification phrase ${marker} remains retrievable.` })});
+            if (memoryUpdate.success !== true || !memoryUpdate.data?.embedding) throw new Error("Memory update/re-embedding contract failed");
             const memorySearch = await request("/api/ai/memories/search?q=" + encodeURIComponent(marker));
-            if (memorySearch.success !== true || !memorySearch.data?.some(m => m.id === manualMemoryId)) {
-              throw new Error("Memory semantic search contract failed");
-            }
+            if (memorySearch.success !== true || !memorySearch.data?.some(m => m.id === manualMemoryId)) throw new Error("Memory search contract failed");
 
-            const chat = await request("/api/ai/chat", {
-              method: "POST",
-              body: JSON.stringify({
-                message: `Reply briefly and include this verification marker exactly: ${marker}`
-              })
-            });
-
-            if (chat.success !== true || !chat.data?.conversationId || !chat.data?.answer) {
-              throw new Error("Chat response contract failed");
-            }
+            const chat = await request("/api/ai/chat", { method: "POST", body: JSON.stringify({ message: `Reply briefly and include this verification marker exactly: ${marker}` })});
+            if (chat.success !== true || !chat.data?.conversationId || !chat.data?.answer) throw new Error("Chat response contract failed");
             ids.conversations.push(chat.data.conversationId);
-
-            if (!chat.data.answer.includes(marker)) {
-              throw new Error("AI response did not contain the verification marker");
-            }
-
-            if (!Array.isArray(chat.data.knowledge) || !Array.isArray(chat.data.memories)) {
-              throw new Error("Chat context contract failed");
-            }
-            if (!chat.data.knowledge.some(k => k.id === knowledgeId)) {
-              throw new Error("Chat did not retrieve the live knowledge document");
-            }
-            if (!chat.data.memories.some(m => m.id === manualMemoryId)) {
-              throw new Error("Chat did not retrieve the live manual memory");
-            }
+            if (!chat.data.answer.includes(marker)) throw new Error("AI response did not contain the verification marker");
+            if (!Array.isArray(chat.data.knowledge) || !Array.isArray(chat.data.memories)) throw new Error("Chat context contract failed");
+            if (!chat.data.knowledge.some(k => k.id === knowledgeId)) throw new Error("Chat did not retrieve live knowledge");
+            if (!chat.data.memories.some(m => m.id === manualMemoryId)) throw new Error("Chat did not retrieve live memory");
 
             const conversationId = chat.data.conversationId;
-            const followup = await request("/api/ai/chat", {
-              method: "POST",
-              body: JSON.stringify({
-                conversationId,
-                message: `Confirm the marker from our conversation: ${marker}`
-              })
-            });
-            if (followup.success !== true || followup.data?.conversationId !== conversationId) {
-              throw new Error("Conversation continuation contract failed");
-            }
-
-            const renamed = await request("/api/ai/conversations/" + conversationId, {
-              method: "PATCH",
-              body: JSON.stringify({ title: `E2E ${marker}` })
-            });
-            if (renamed.success !== true || renamed.data?.title !== `E2E ${marker}`) {
-              throw new Error("Conversation rename contract failed");
-            }
-
+            const followup = await request("/api/ai/chat", { method: "POST", body: JSON.stringify({ conversationId, message: `Confirm the marker from our conversation: ${marker}` })});
+            if (followup.success !== true || followup.data?.conversationId !== conversationId) throw new Error("Conversation continuation contract failed");
+            const renamed = await request("/api/ai/conversations/" + conversationId, { method: "PATCH", body: JSON.stringify({ title: `E2E ${marker}` })});
+            if (renamed.success !== true || renamed.data?.title !== `E2E ${marker}`) throw new Error("Conversation rename contract failed");
             const conversation = await request("/api/ai/conversations/" + conversationId);
-            if (conversation.success !== true || !Array.isArray(conversation.data?.messages)) {
-              throw new Error("Conversation persistence contract failed");
-            }
-
+            if (conversation.success !== true || !Array.isArray(conversation.data?.messages)) throw new Error("Conversation persistence contract failed");
             const roles = conversation.data.messages.map(m => m.role);
-            if (!roles.includes("user") || !roles.includes("assistant") || conversation.data.messages.length < 4) {
-              throw new Error("Conversation does not contain expected persisted messages");
-            }
-
+            if (!roles.includes("user") || !roles.includes("assistant") || conversation.data.messages.length < 4) throw new Error("Conversation messages were not persisted");
             const memories = await request("/api/ai/memories");
-            if (memories.success !== true || !Array.isArray(memories.data)) {
-              throw new Error("Memory list contract failed");
-            }
-            if (!memories.data.some(m => m.conversationId === conversationId)) {
-              throw new Error("Conversation memory was not persisted");
-            }
+            if (memories.success !== true || !Array.isArray(memories.data) || !memories.data.some(m => m.conversationId === conversationId)) throw new Error("Conversation memory was not persisted");
 
-            console.log(JSON.stringify({
-              status: "PASS",
-              conversationId,
-              knowledgeId,
-              manualMemoryId,
-              knowledgeDocumentsAvailable: knowledge.data.length,
-              retrievedKnowledgeCount: chat.data.knowledge.length,
-              retrievedMemoryCount: chat.data.memories.length,
-              messageCount: conversation.data.messages.length
-            }, null, 2));
+            console.log(JSON.stringify({ status: "PASS", knowledgeId, manualMemoryId, retrievedKnowledgeCount: chat.data.knowledge.length, retrievedMemoryCount: chat.data.memories.length, messageCount: conversation.data.messages.length }, null, 2));
           } finally {
             await cleanup();
           }
