@@ -7,6 +7,15 @@ const fail=(res:Response,status:number,message:string)=>res.status(status).json(
 
 export async function controlChat(req:Request,res:Response){
  try{
+  if(req.body?.cancel===true){
+   const confirmationId=typeof req.body?.confirmationId==="string"?req.body.confirmationId.trim():"";
+   if(!confirmationId)return fail(res,400,"confirmationId is required.");
+   const cancelled=await prisma.aIControlConfirmation.updateMany({
+    where:{id:confirmationId,consumedAt:null,expiresAt:{gt:new Date()}},
+    data:{consumedAt:new Date()}
+   });
+   return cancelled.count===1?res.json({success:true,data:{mode:"cancelled"}}):fail(res,409,"Confirmation expired or already used.");
+  }
   // Confirmation consumes the exact server-stored action; the natural-language prompt is never re-planned.
   if(req.body?.confirm===true){
    const confirmationId=typeof req.body?.confirmationId==="string"?req.body.confirmationId.trim():"";
