@@ -308,3 +308,14 @@ model AIProviderConnection {
 
   @@index([status, updatedAt])
 }
+
+
+model AIControlConfirmation {
+  id        String   @id @default(cuid())
+  action    Json
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt, consumedAt])
+}
