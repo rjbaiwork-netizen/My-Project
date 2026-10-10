@@ -1,11 +1,13 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
+import PDFDocument from "pdfkit";
 import { projectDocuments, type DocumentFormat } from "../../../../../lib/project-documents";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const supportedFormats: DocumentFormat[] = ["md", "txt", "html"];
+const supportedFormats: DocumentFormat[] = ["md", "txt", "html", "docx", "pdf"];
 
 function escapeHtml(value: string): string {
   return value
@@ -32,6 +34,69 @@ function toPlainText(markdown: string): string {
     .replace(/^\|.*\|$/gm, (line) => line.replace(/^\|/, "").replace(/\|$/, "").replace(/\|/g, "  |  "))
     .replace(/^\s*:?[-]+:?([| :?-]*).*$/gm, "")
     .trim() + "\n";
+}
+
+function makeDocx(markdown: string, title: string): Promise<Buffer> {
+  const paragraphs = markdown.split(/\r?\n/).map((line) => {
+    const heading = line.match(/^(#{1,6})\s+(.*)$/);
+    if (heading) {
+      const level = heading[1].length;
+      const headingLevel = level === 1 ? HeadingLevel.HEADING_1
+        : level === 2 ? HeadingLevel.HEADING_2
+        : HeadingLevel.HEADING_3;
+      return new Paragraph({ heading: headingLevel, children: [new TextRun(heading[2])] });
+    }
+    const clean = line
+      .replace(/^\s*>\s?/, "")
+      .replace(/^\s*[-*+]\s+/, "• ")
+      .replace(/^\s*\d+\.\s+/, "• ")
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/__(.*?)__/g, "$1")
+      .replace(/\*([^*]+)\*/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/^\|.*\|$/, (row) => row.replace(/^\|/, "").replace(/\|$/, "").replace(/\|/g, "   |   "));
+    return new Paragraph({ children: [new TextRun(clean || " ")] });
+  });
+  const doc = new Document({
+    creator: "My-Project Document Library",
+    title,
+    description: "Exported project report",
+    sections: [{ properties: {}, children: paragraphs }],
+  });
+  return Packer.toBuffer(doc);
+}
+
+async function makePdf(markdown: string, title: string): Promise<Buffer> {
+  return new Promise(async (resolve, reject) => {
+    const pdf = new PDFDocument({ autoFirstPage: true, margin: 48, size: "A4", info: { Title: title, Author: "My-Project" } });
+    const chunks: Buffer[] = [];
+    pdf.on("data", (chunk: Buffer) => chunks.push(chunk));
+    pdf.on("end", () => resolve(Buffer.concat(chunks)));
+    pdf.on("error", reject);
+
+    // Prefer an installed Bengali font so Bengali glyphs can be embedded in the PDF.
+    const fontCandidates = [
+      path.join(process.cwd(), "node_modules/@fontsource/noto-sans-bengali/files/noto-sans-bengali-bengali-400-normal.woff2"),
+      path.join(process.cwd(), "node_modules/@fontsource/noto-sans-bengali/files/noto-sans-bengali-bengali-400-normal.woff"),
+    ];
+    let fontReady = false;
+    for (const fontPath of fontCandidates) {
+      try {
+        await readFile(fontPath);
+        pdf.font(fontPath);
+        fontReady = true;
+        break;
+      } catch {
+        // Try the next available font format.
+      }
+    }
+    if (!fontReady) pdf.font("Helvetica");
+
+    pdf.fontSize(16).text(title, { align: "left" });
+    pdf.moveDown(0.8);
+    pdf.fontSize(9.5).text(toPlainText(markdown), { lineGap: 3, paragraphGap: 4 });
+    pdf.end();
+  });
 }
 
 export async function GET(
@@ -61,7 +126,7 @@ export async function GET(
     const filePath = path.join(process.cwd(), "public", "docs", document.filename);
     const markdown = await readFile(filePath, "utf8");
     const baseName = document.filename.replace(/\.md$/i, "");
-    let body = markdown;
+    let body: string | Buffer = markdown;
     let contentType = "text/markdown; charset=utf-8";
     let filename = baseName + ".md";
 
@@ -82,6 +147,14 @@ export async function GET(
 </html>`;
       contentType = "text/html; charset=utf-8";
       filename = baseName + ".html";
+    } else if (requested === "docx") {
+      body = await makeDocx(markdown, document.title);
+      contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+      filename = baseName + ".docx";
+    } else if (requested === "pdf") {
+      body = await makePdf(markdown, document.title);
+      contentType = "application/pdf";
+      filename = baseName + ".pdf";
     }
 
     return new Response(body, {
@@ -93,9 +166,10 @@ export async function GET(
         "X-Content-Type-Options": "nosniff",
       },
     });
-  } catch {
-    return new Response("Document file not found", {
-      status: 404,
+  } catch (error) {
+    console.error("Document export failed:", error);
+    return new Response("Document export failed", {
+      status: 500,
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   }
