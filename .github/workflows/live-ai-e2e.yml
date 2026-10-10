@@ -232,9 +232,12 @@ jobs:
             if (!match) throw new Error("Provider diagnostics login did not return a session cookie");
             cookie = "my_project_admin_session=" + match[1];
           } else {
-            const denied = await fetch(base + "/api/ai/providers", { cache: "no-store" });
-            if (denied.status !== 401) throw new Error("Unauthenticated provider diagnostics must be blocked with HTTP 401");
-            console.log("PASS AI provider endpoints require admin session; detailed provider diagnostics skipped (Actions secret missing)");
+            for (const path of ["/api/ai/providers", "/api/ai/providers/events?limit=12", "/api/ai/provider-integrations"]) {
+              const denied = await fetch(base + path, { cache: "no-store" });
+              if (denied.status !== 401) throw new Error("Unauthenticated access to " + path + " must return HTTP 401; got " + denied.status);
+              console.log("PASS unauthenticated access blocked: " + path);
+            }
+            console.log("Authenticated provider diagnostics skipped because ADMIN_LOGIN_PASSWORD Actions secret is not configured");
             process.exit(0);
           }
           for (const path of ["/api/ai/providers", "/api/ai/providers/events?limit=12"]) {
