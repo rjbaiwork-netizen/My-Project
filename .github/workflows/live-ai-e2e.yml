@@ -246,7 +246,7 @@ jobs:
 
       - name: Live AI Chat + Knowledge + Memory E2E
         env:
-          API_BASE: https://my-project-production-9cd9.up.railway.app
+          FRONTEND_URL: https://my-project-mk2x.onrender.com
         run: |
           set -euo pipefail
 
