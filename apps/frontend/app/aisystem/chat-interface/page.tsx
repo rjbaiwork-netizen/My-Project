@@ -83,12 +83,26 @@ export default function AIChatInterfacePage(){
     try{await readJson(await fetch(`${base}/api/ai/conversations/${id}`,{method:"DELETE"}));if(conversationId===id)newConversation();await loadConversations();}
     catch(e){setError(e instanceof Error?e.message:"Unable to delete.");}
   }
+  async function cancelPendingControl(){
+    const pending=pendingControl;
+    setPendingControl(null);
+    if(!pending?.confirmationId)return;
+    try{
+      await readJson(await fetch("/api/ai/control-chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cancel:true,confirmationId:pending.confirmationId}),cache:"no-store"}));
+    }catch(e){setError(e instanceof Error?e.message:"Unable to cancel the pending action.");}
+  }
+  async function logout(){
+    try{
+      await readJson(await fetch("/api/admin/logout",{method:"POST",cache:"no-store"}));
+      window.location.assign("/admin-login");
+    }catch(e){setError(e instanceof Error?e.message:"Unable to end administrator session.");}
+  }
 
   return <MobileAppShell theme="dark"><main className="min-h-screen px-4 py-8 text-white sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl">
     <p className="text-xs font-bold uppercase tracking-[.18em] text-blue-400">AI System / Conversation</p><h1 className="mt-2 text-3xl font-bold tracking-tight">AI Chat</h1>
     <p className="mt-3 text-slate-400">Conversation, Knowledge এবং Memory একসাথে ব্যবহার করুন।</p>
     <div className="mt-4"><a href="/aisystem/chat-interface/work-plan" className="inline-flex items-center gap-2 rounded-lg border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm font-semibold text-blue-200 hover:bg-blue-400/20">Chat Interface Work Plan ও Verification Checklist →</a></div>
-    <div className="mt-3"><a href="/admin-login" className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-white/10">Administrator login / session পুনরায় শুরু করুন →</a></div>
+    <div className="mt-3 flex flex-wrap items-center gap-2"><a href="/admin-login" className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-white/10">Administrator login / session পুনরায় শুরু করুন →</a><button type="button" onClick={()=>void logout()} className="rounded-lg border border-red-300/20 bg-red-300/10 px-4 py-2 text-sm font-semibold text-red-100 hover:bg-red-300/20">Log out</button></div>
     <div className="mt-8 grid gap-5 lg:grid-cols-[280px_1fr]">
       <aside className="rounded-2xl border border-white/10 bg-slate-900/80 p-4"><div className="mb-3 flex items-center justify-between"><h2 className="font-bold">Conversations</h2><button onClick={newConversation} className="rounded-lg bg-white/10 px-2 py-1 text-xs">New</button></div>
         <div className="space-y-2">{conversations.map(c=><div key={c.id} className={`rounded-xl p-3 ${conversationId===c.id?"bg-blue-500/20":"bg-white/5"}`}><button className="w-full text-left text-sm font-medium" onClick={()=>void openConversation(c.id)}>{c.title||"Untitled conversation"}</button><div className="mt-2 flex gap-2 text-[10px] text-slate-500"><span>{c._count?.messages??0} messages</span><button onClick={()=>void rename(c.id)}>Rename</button><button onClick={()=>void remove(c.id)}>Delete</button></div></div>)}{!conversations.length&&<p className="text-xs text-slate-500">No conversations yet.</p>}</div>
@@ -98,7 +112,7 @@ export default function AIChatInterfacePage(){
         {context.knowledge.length+context.memories.length>0&&<div className="mb-4 rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Context used for latest response</p><div className="mt-3 grid gap-3 md:grid-cols-2">{context.knowledge.length>0&&<div><p className="text-xs font-semibold text-blue-300">Knowledge ({context.knowledge.length})</p>{context.knowledge.map(x=><p key={x.id} className="mt-1 truncate text-xs text-slate-400">{x.title}</p>)}</div>}{context.memories.length>0&&<div><p className="text-xs font-semibold text-blue-300">Memory ({context.memories.length})</p>{context.memories.map(x=><p key={x.id} className="mt-1 truncate text-xs text-slate-400">{x.namespace??x.content}</p>)}</div>}</div></div>}
         {error&&<div className="mb-4 rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">{error}</div>}
         <div className="mb-3 flex items-center gap-3"><label className="text-xs text-slate-400">Optional agent execution</label><select value={agentId} onChange={e=>setAgentId(e.target.value)} className="rounded-lg bg-black/30 px-3 py-2 text-xs ring-1 ring-white/10"><option value="">Chat only</option>{agents.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></div>\n        <textarea value={message} onChange={e=>setMessage(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();void send();}}} placeholder="Ask the My-Project AI Assistant..." className="min-h-28 w-full resize-y rounded-xl bg-black/20 p-4 text-sm outline-none ring-1 ring-white/10 placeholder:text-slate-500"/>
-        {pendingControl&&<div className="mb-3 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-amber-100"><p className="font-semibold">AI action requires confirmation.</p><div className="mt-2 flex gap-2"><button type="button" onClick={()=>{const p=pendingControl;setPendingControl(null);void send(true,p.message,p.confirmationId);}} className="rounded-lg bg-white px-3 py-2 font-semibold text-slate-950">Confirm</button><button type="button" onClick={()=>setPendingControl(null)} className="rounded-lg bg-black/20 px-3 py-2">Cancel</button></div></div>}        <button type="button" onClick={()=>void send()} disabled={loading||!message.trim()} className="mt-4 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50">{loading?"Thinking…":"Send"}</button>
+        {pendingControl&&<div className="mb-3 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-amber-100"><p className="font-semibold">AI action requires confirmation.</p><div className="mt-2 flex gap-2"><button type="button" onClick={()=>{const p=pendingControl;setPendingControl(null);void send(true,p.message,p.confirmationId);}} className="rounded-lg bg-white px-3 py-2 font-semibold text-slate-950">Confirm</button><button type="button" onClick={()=>void cancelPendingControl()} className="rounded-lg bg-black/20 px-3 py-2">Cancel</button></div></div>}        <button type="button" onClick={()=>void send()} disabled={loading||!message.trim()} className="mt-4 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50">{loading?"Thinking…":"Send"}</button>
       </section>
     </div>
   </div></main></MobileAppShell>;
