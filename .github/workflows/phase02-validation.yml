@@ -40,6 +40,9 @@ jobs:
           DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
         run: npm run build:backend
 
+      - name: Run backend admin-auth security tests
+        run: npm run test:security --workspace=backend
+
       - name: Validate Prisma schema (no database connection)
         env:
           DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
