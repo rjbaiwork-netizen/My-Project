@@ -91,6 +91,22 @@ export default function AdminSystemConfigPage() {
     }
   };
 
+  const handleDelete = async (section: CMSSection) => {
+    if (!window.confirm(`Delete the ${section.title} section? This removes it from the CMS and public website.`)) return;
+    const previous = sections;
+    setSavingId(section.id);
+    setPageError(null);
+    setSections((current) => current.filter((item) => item.id !== section.id));
+    try {
+      await sectionApi.deleteSection(section.id);
+    } catch (error) {
+      setSections(previous);
+      setPageError(error instanceof Error ? error.message : "Unable to delete section.");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   return (
     <MobileAppShell theme="light">
       <main className="min-h-screen bg-slate-50 text-slate-950">
@@ -150,7 +166,7 @@ export default function AdminSystemConfigPage() {
                   </div>
                   <div><span className="mr-2 text-xs text-slate-400 md:hidden">Status</span><SectionStatusBadge isVisible={section.isVisible} /></div>
                   <div className="flex items-center gap-3"><span className="text-xs text-slate-400 md:hidden">Visibility</span><VisibilityToggle checked={section.isVisible} disabled={savingId === section.id} onChange={(value) => void handleVisibilityChange(section, value)} /></div>
-                  <div className="text-left md:text-right"><button type="button" disabled={savingId === section.id} onClick={() => setEditingSection(section)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Edit JSON</button></div>
+                  <div className="flex flex-wrap gap-2 text-left md:justify-end"><button type="button" disabled={savingId === section.id} onClick={() => setEditingSection(section)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Edit JSON</button><button type="button" disabled={savingId === section.id} onClick={() => void handleDelete(section)} className="rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">Delete</button></div>
                 </article>
               ))}
             </div>
