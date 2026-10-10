@@ -132,6 +132,16 @@
   ],
   "updates": [
     {
+      "id": "fcf631448c715022273b651a2d69aa501dcf9da8",
+      "commit": "fcf631448c715022273b651a2d69aa501dcf9da8",
+      "title": "fix: link each document format to its own downloadable file",
+      "date": "2026-10-11T03:45:50+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/fcf631448c715022273b651a2d69aa501dcf9da8",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "f54db54210936e8b799fc5170d3fadf28f221902",
       "commit": "f54db54210936e8b799fc5170d3fadf28f221902",
       "title": "fix: correct document catalog import path",
