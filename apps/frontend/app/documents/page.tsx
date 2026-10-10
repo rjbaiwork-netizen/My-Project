@@ -2,13 +2,13 @@ import { projectDocuments } from "../../lib/project-documents";
 
 export const metadata = {
   title: "প্রজেক্ট ডকুমেন্টস | My-Project",
-  description: "প্রজেক্টের রিপোর্ট ও ডকুমেন্ট দেখুন এবং পছন্দের ফরম্যাটে ডাউনলোড করুন।",
+  description: "প্রজেক্টের রিপোর্ট ও ডকুমেন্ট পছন্দের ফরম্যাটে ডাউনলোড করুন।",
 };
 
 const formatLabels = {
-  md: { label: "Markdown (.md)", description: "মূল editable source" },
-  txt: { label: "Text (.txt)", description: "সাধারণ টেক্সট ফাইল" },
-  html: { label: "HTML (.html)", description: "ব্রাউজারে খোলা যায় এমন ফাইল" },
+  md: { label: "Markdown (.md)", description: "মূল editable source", filename: "my-project-full-blueprint-bn.md" },
+  txt: { label: "Plain Text (.txt)", description: "সাধারণ টেক্সট ডকুমেন্ট", filename: "my-project-full-blueprint-bn.txt" },
+  html: { label: "HTML Document (.html)", description: "ফরম্যাট করা স্বতন্ত্র HTML ডকুমেন্ট", filename: "my-project-full-blueprint-bn.html" },
 } as const;
 
 export default function DocumentsPage() {
@@ -23,17 +23,15 @@ export default function DocumentsPage() {
           <p className="text-sm font-semibold uppercase tracking-widest text-slate-500">
             My-Project · Document Library
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
-            ডকুমেন্ট লাইব্রেরি
-          </h1>
+          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">ডকুমেন্ট লাইব্রেরি</h1>
           <p className="mt-4 max-w-2xl leading-7 text-slate-600">
-            এখানে প্রকল্পের রিপোর্ট, ব্লুপ্রিন্ট ও অন্যান্য ডকুমেন্ট তালিকাভুক্ত থাকবে।
-            প্রতিটি ডকুমেন্টের পাশে নিজের প্রয়োজনমতো ফাইল ফরম্যাট বেছে ডাউনলোড করুন।
+            প্রতিটি ডকুমেন্টের জন্য যে ফরম্যাট দরকার, সেই আলাদা ডাউনলোড অপশনে ক্লিক করুন।
+            প্রতিটি অপশন তার নিজস্ব .md, .txt বা .html ফাইল ডাউনলোড করবে।
           </p>
           <p className="mt-3 rounded-xl bg-blue-50 p-3 text-sm leading-6 text-blue-900">
-            নতুন ডকুমেন্ট যুক্ত করার নিয়ম: GitHub-এর <code>apps/frontend/public/docs/</code>
-            ফোল্ডারে ফাইল যোগ করুন, এরপর <code>apps/frontend/lib/project-documents.ts</code>
-            তালিকায় তার নাম, বিবরণ ও উপলভ্য ফরম্যাট যুক্ত করুন। Deploy হলে সেটি এই পেজে দেখা যাবে।
+            নতুন ডকুমেন্ট যুক্ত করতে GitHub-এর <code>apps/frontend/public/docs/</code> ফোল্ডারে
+            সেই ডকুমেন্টের প্রতিটি সমর্থিত ফরম্যাটের ফাইল রাখুন এবং
+            <code> apps/frontend/lib/project-documents.ts </code> তালিকায় সেটি যুক্ত করুন।
           </p>
         </header>
 
@@ -46,23 +44,26 @@ export default function DocumentsPage() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{document.category}</p>
                   <h2 className="mt-1 text-xl font-semibold">{document.title}</h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{document.description}</p>
-
                   <h3 className="mt-5 text-sm font-semibold text-slate-800">ডাউনলোড ফরম্যাট বেছে নিন</h3>
                   <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    {document.formats.map((format) => (
-                      <a
-                        key={format}
-                        href={`/api/documents/${document.id}/download?format=${format}`}
-                        className="group rounded-xl border border-slate-200 p-4 transition hover:border-blue-500 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <span className="flex items-center justify-between gap-2 font-semibold text-slate-900">
-                          {formatLabels[format].label}
-                          <span aria-hidden="true" className="text-blue-700">↓</span>
-                        </span>
-                        <span className="mt-1 block text-xs text-slate-500">{formatLabels[format].description}</span>
-                        <span className="mt-3 inline-block text-sm font-semibold text-blue-700">ডাউনলোড করুন</span>
-                      </a>
-                    ))}
+                    {document.formats.map((format) => {
+                      const option = formatLabels[format];
+                      return (
+                        <a
+                          key={format}
+                          href={`/docs/${option.filename}`}
+                          download={option.filename}
+                          className="group rounded-xl border border-slate-200 p-4 transition hover:border-blue-500 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <span className="flex items-center justify-between gap-2 font-semibold text-slate-900">
+                            {option.label}
+                            <span aria-hidden="true" className="text-blue-700">↓</span>
+                          </span>
+                          <span className="mt-1 block text-xs text-slate-500">{option.description}</span>
+                          <span className="mt-3 inline-block text-sm font-semibold text-blue-700">এই ফাইল ডাউনলোড করুন</span>
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -71,9 +72,8 @@ export default function DocumentsPage() {
         </section>
 
         <footer className="mt-6 rounded-2xl border border-dashed border-slate-300 p-5 text-sm leading-6 text-slate-600">
-          <strong className="text-slate-800">নোট:</strong> বর্তমানে Markdown, TXT এবং HTML ডাউনলোড সমর্থিত।
-          Word (.docx) ও PDF-এর জন্য সঠিক ফাইল জেনারেশন যোগ করা হলে সেগুলোও আলাদা অপশন হিসেবে দেখানো যাবে;
-          ভুল এক্সটেনশন দিয়ে কোনো ফাইলকে Word বা PDF বলা হচ্ছে না।
+          <strong className="text-slate-800">ফাইল ফরম্যাট:</strong> প্রতিটি অপশন এখন আলাদা ফাইলের দিকে নির্দেশ করে।
+          Word (.docx) ও PDF এই তালিকায় এখনো নেই; সেগুলো যোগ করতে প্রকৃত DOCX/PDF ফাইল জেনারেশন বা প্রস্তুত ফাইল যুক্ত করতে হবে।
         </footer>
       </div>
     </main>
