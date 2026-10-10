@@ -34,14 +34,14 @@ export default function AIChatInterfacePage(){
   useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"});},[messages,loading]);
 
   function newConversation(){setConversationId(undefined);setMessages([]);setContext({knowledge:[],memories:[]});setError("");}
-  async function send(confirm=false, controlMessage?:string){
+  async function send(confirm=false, controlMessage?:string, confirmationId?:string){
     const value=(controlMessage??message).trim();if(!value||loading)return;
     setLoading(true);setError("");
     try{
       let controlResponse=await fetch("/api/ai/control-chat",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({message:value,confirm}),
+        body:JSON.stringify(confirm?{message:value,confirm,confirmationId}:{message:value,confirm}),
         cache:"no-store"
       });
       if((controlResponse.status===404||controlResponse.status===502||controlResponse.status===503||controlResponse.status===504)&&!confirm){
@@ -55,7 +55,7 @@ export default function AIChatInterfacePage(){
       }
       const control=await readJson(controlResponse);
       if(control.data?.mode==="action_preview"){
-        setPendingControl({message:value,action:control.data.action});
+        setPendingControl({message:value,action:control.data.action,confirmationId:control.data.confirmationId});
         setMessages(m=>[...m,{id:`u-${Date.now()}`,role:"user",content:value,createdAt:new Date().toISOString()},{id:`p-${Date.now()+1}`,role:"assistant",content:`আমি এই actionটি করতে প্রস্তুত: ${JSON.stringify(control.data.action,null,2)}\n\nConfirm চাপলে এটি execute হবে.`,createdAt:new Date().toISOString()}]);
         setMessage(""); return;
       }
@@ -97,7 +97,7 @@ export default function AIChatInterfacePage(){
         {context.knowledge.length+context.memories.length>0&&<div className="mb-4 rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-xs font-bold uppercase tracking-wider text-slate-500">Context used for latest response</p><div className="mt-3 grid gap-3 md:grid-cols-2">{context.knowledge.length>0&&<div><p className="text-xs font-semibold text-blue-300">Knowledge ({context.knowledge.length})</p>{context.knowledge.map(x=><p key={x.id} className="mt-1 truncate text-xs text-slate-400">{x.title}</p>)}</div>}{context.memories.length>0&&<div><p className="text-xs font-semibold text-blue-300">Memory ({context.memories.length})</p>{context.memories.map(x=><p key={x.id} className="mt-1 truncate text-xs text-slate-400">{x.namespace??x.content}</p>)}</div>}</div></div>}
         {error&&<div className="mb-4 rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">{error}</div>}
         <div className="mb-3 flex items-center gap-3"><label className="text-xs text-slate-400">Optional agent execution</label><select value={agentId} onChange={e=>setAgentId(e.target.value)} className="rounded-lg bg-black/30 px-3 py-2 text-xs ring-1 ring-white/10"><option value="">Chat only</option>{agents.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></div>\n        <textarea value={message} onChange={e=>setMessage(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();void send();}}} placeholder="Ask the My-Project AI Assistant..." className="min-h-28 w-full resize-y rounded-xl bg-black/20 p-4 text-sm outline-none ring-1 ring-white/10 placeholder:text-slate-500"/>
-        {pendingControl&&<div className="mb-3 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-amber-100"><p className="font-semibold">AI action requires confirmation.</p><div className="mt-2 flex gap-2"><button type="button" onClick={()=>{const p=pendingControl;setPendingControl(null);void send(true,p.message);}} className="rounded-lg bg-white px-3 py-2 font-semibold text-slate-950">Confirm</button><button type="button" onClick={()=>setPendingControl(null)} className="rounded-lg bg-black/20 px-3 py-2">Cancel</button></div></div>}        <button type="button" onClick={()=>void send()} disabled={loading||!message.trim()} className="mt-4 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50">{loading?"Thinking…":"Send"}</button>
+        {pendingControl&&<div className="mb-3 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-xs text-amber-100"><p className="font-semibold">AI action requires confirmation.</p><div className="mt-2 flex gap-2"><button type="button" onClick={()=>{const p=pendingControl;setPendingControl(null);void send(true,p.message,p.confirmationId);}} className="rounded-lg bg-white px-3 py-2 font-semibold text-slate-950">Confirm</button><button type="button" onClick={()=>setPendingControl(null)} className="rounded-lg bg-black/20 px-3 py-2">Cancel</button></div></div>}        <button type="button" onClick={()=>void send()} disabled={loading||!message.trim()} className="mt-4 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50">{loading?"Thinking…":"Send"}</button>
       </section>
     </div>
   </div></main></MobileAppShell>;
