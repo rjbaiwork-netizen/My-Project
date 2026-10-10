@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "171cfcf49860",
+      "name": "enable Word and PDF document formats",
+      "description": "Added by main-branch commit 171cfcf. See update history for changed files and deployment status.",
+      "source": "GitHub main commit",
+      "commit": "171cfcf49860290b4b3c9b7bb43a7e59a56433d6",
+      "addedAt": "2026-10-11T03:48:07+06:00"
+    },
+    {
       "id": "e2179f9f8c69",
       "name": "include Bengali font for PDF exports",
       "description": "Added by main-branch commit e2179f9. See update history for changed files and deployment status.",
@@ -147,6 +155,18 @@
     }
   ],
   "updates": [
+    {
+      "id": "171cfcf49860290b4b3c9b7bb43a7e59a56433d6",
+      "commit": "171cfcf49860290b4b3c9b7bb43a7e59a56433d6",
+      "title": "feat: enable Word and PDF document formats",
+      "date": "2026-10-11T03:48:07+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/171cfcf49860290b4b3c9b7bb43a7e59a56433d6",
+      "features": [
+        "enable Word and PDF document formats"
+      ],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
     {
       "id": "e2179f9f8c697491d54ff4c83a8a1f561fa35dc7",
       "commit": "e2179f9f8c697491d54ff4c83a8a1f561fa35dc7",
