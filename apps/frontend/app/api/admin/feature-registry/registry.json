@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "features": [
     {
+      "id": "65729d299a92",
+      "name": "add documents page with blueprint report download",
+      "description": "Added by main-branch commit 65729d2. See update history for changed files and deployment status.",
+      "source": "GitHub main commit",
+      "commit": "65729d299a92557ef30fb49874c70ecd126aaa0c",
+      "addedAt": "2026-10-11T03:30:58+06:00"
+    },
+    {
       "id": "79e417479a1d",
       "name": "integrate API connection center and operations diagnostics (#38)",
       "description": "Added by main-branch commit 79e4174. See update history for changed files and deployment status.",
@@ -99,6 +107,18 @@
     }
   ],
   "updates": [
+    {
+      "id": "65729d299a92557ef30fb49874c70ecd126aaa0c",
+      "commit": "65729d299a92557ef30fb49874c70ecd126aaa0c",
+      "title": "feat: add documents page with blueprint report download",
+      "date": "2026-10-11T03:30:58+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/65729d299a92557ef30fb49874c70ecd126aaa0c",
+      "features": [
+        "add documents page with blueprint report download"
+      ],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
     {
       "id": "33ab0b2643a558e45cc9961a3ecf28e87ce6a06d",
       "commit": "33ab0b2643a558e45cc9961a3ecf28e87ce6a06d",
