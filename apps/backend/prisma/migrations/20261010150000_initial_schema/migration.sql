@@ -265,3 +265,5 @@ ALTER TABLE "AIAgentBrainCategory" ADD CONSTRAINT "AIAgentBrainCategory_agentId_
 ALTER TABLE "AIBrainMetric" ADD CONSTRAINT "AIBrainMetric_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "AIAgentBrainCategory"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "AIAutomation" ADD CONSTRAINT "AIAutomation_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "AIAgent"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE "AIAutomationRun" ADD CONSTRAINT "AIAutomationRun_automationId_fkey" FOREIGN KEY ("automationId") REFERENCES "AIAutomation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+CREATE INDEX "AIProviderConnection_status_updatedAt_idx" ON "AIProviderConnection"("status", "updatedAt");
