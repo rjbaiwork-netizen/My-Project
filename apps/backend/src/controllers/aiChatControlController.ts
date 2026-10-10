@@ -1,6 +1,7 @@
 import type {Request,Response} from "express";
 import { prisma } from "../lib/prisma.js";
 import { Prisma } from "../../generated/prisma/client.js";
+import { consumeConfirmation, type ConfirmationDelegate } from "../lib/confirmationStore.js";
 import { actionNeedsConfirmation, describeControlResult, executeChatControl, planChatControl, type ChatControlAction } from "../lib/aiChatControl.js";
 
 const fail=(res:Response,status:number,message:string)=>res.status(status).json({success:false,error:{message}});
@@ -10,25 +11,17 @@ export async function controlChat(req:Request,res:Response){
   if(req.body?.cancel===true){
    const confirmationId=typeof req.body?.confirmationId==="string"?req.body.confirmationId.trim():"";
    if(!confirmationId)return fail(res,400,"confirmationId is required.");
-   const cancelled=await prisma.aIControlConfirmation.updateMany({
-    where:{id:confirmationId,consumedAt:null,expiresAt:{gt:new Date()}},
-    data:{consumedAt:new Date()}
-   });
-   return cancelled.count===1?res.json({success:true,data:{mode:"cancelled"}}):fail(res,409,"Confirmation expired or already used.");
+   const cancelled=await consumeConfirmation(prisma.aIControlConfirmation as unknown as ConfirmationDelegate,confirmationId);
+   return cancelled.status==="consumed"?res.json({success:true,data:{mode:"cancelled"}}):fail(res,409,"Confirmation expired or already used.");
   }
   // Confirmation consumes the exact server-stored action; the natural-language prompt is never re-planned.
   if(req.body?.confirm===true){
    const confirmationId=typeof req.body?.confirmationId==="string"?req.body.confirmationId.trim():"";
    if(!confirmationId)return fail(res,400,"confirmationId is required.");
-   const pending=await prisma.aIControlConfirmation.findUnique({where:{id:confirmationId}});
-   if(!pending)return fail(res,404,"Confirmation not found or already used.");
-   if(pending.consumedAt||pending.expiresAt.getTime()<=Date.now())return fail(res,409,"Confirmation expired or already used. Preview the action again.");
-   const consumed=await prisma.aIControlConfirmation.updateMany({
-    where:{id:pending.id,consumedAt:null,expiresAt:{gt:new Date()}},
-    data:{consumedAt:new Date()}
-   });
-   if(consumed.count!==1)return fail(res,409,"Confirmation expired or already used. Preview the action again.");
-   const action=pending.action as unknown as ChatControlAction;
+   const consumed=await consumeConfirmation(prisma.aIControlConfirmation as unknown as ConfirmationDelegate,confirmationId);
+   if(consumed.status==="not-found")return fail(res,404,"Confirmation not found or already used.");
+   if(consumed.status!=="consumed")return fail(res,409,"Confirmation expired or already used. Preview the action again.");
+   const action=consumed.confirmation.action as unknown as ChatControlAction;
    if(!action||typeof action.type!=="string"||!actionNeedsConfirmation(action))return fail(res,400,"Stored confirmation action is invalid.");
    const result=await executeChatControl(action);
    const summary=await describeControlResult(action,result);
