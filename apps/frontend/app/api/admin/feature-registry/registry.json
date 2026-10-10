@@ -100,6 +100,16 @@
   ],
   "updates": [
     {
+      "id": "36f97841939940dfec1e68132208cc1c41268d19",
+      "commit": "36f97841939940dfec1e68132208cc1c41268d19",
+      "title": "fix(security): protect AI provider integrations proxy",
+      "date": "2026-10-11T02:10:02+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/36f97841939940dfec1e68132208cc1c41268d19",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "64e4bb4f6086da27cc97c6df57a81ab2c412fc4a",
       "commit": "64e4bb4f6086da27cc97c6df57a81ab2c412fc4a",
       "title": "ci: configure frontend URL for authenticated chat E2E",
