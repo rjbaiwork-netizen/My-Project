@@ -6,12 +6,14 @@ import { controlChat } from "../controllers/aiChatControlController.js";
 import { requireAdminAuth } from "../middleware/adminAuth.js";
 import { listConversations, getConversation, renameConversation, deleteConversation, listMemories, createMemory, updateMemory, deleteMemory, searchMemories, updateKnowledge, deleteKnowledge, searchKnowledge } from "../controllers/aiContextController.js";
 const router=Router();
-router.use("/providers",requireAdminAuth);
+// All AI routes contain private conversations, memories, agent operations, or provider data.
+// Require the server-side admin bearer token consistently; the frontend same-origin proxy supplies it after session validation.
+router.use(requireAdminAuth);
 router.get("/providers",listAIProviders);
 router.get("/providers/events",listAIProviderEvents);
 router.post("/providers/reindex-knowledge",reindexKnowledgeRoute);
 router.post("/chat",chat);
-router.post("/control-chat",requireAdminAuth,controlChat);
+router.post("/control-chat",controlChat);
 router.get("/conversations",listConversations);
 router.get("/conversations/:id",getConversation);
 router.patch("/conversations/:id",renameConversation);

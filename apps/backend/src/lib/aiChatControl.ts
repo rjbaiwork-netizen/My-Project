@@ -29,7 +29,7 @@ export async function planChatControl(message:string){
 list-agents; run-agent {agentId,input}; list-knowledge; search-knowledge {query}; create-knowledge {title,content,source?}; update-knowledge {id,title?,content?}; delete-knowledge {id}; list-memories; search-memories {query}; create-memory {content,namespace?}; update-memory {id,content?,namespace?}; delete-memory {id}; list-automations; run-automation {id}; update-automation {id,status?,name?}; list-cms; update-cms {id,title?,content}; toggle-cms {id,isVisible}; delete-cms {id}; list-approvals; approve-automation-run {runId,approver?}; retry-automation-run {runId}; list-jobs; create-job {typeName,payload?,agentId?,scheduledAt?}; run-agent-chain {agentIds,input?}; list-provider-status; list-provider-events.
 User: ${message}`;
  try{const raw=await generateAI([{role:"system",content:"Strict JSON intent classifier. No prose."},{role:"user",content:prompt}],"production");const a=parse(raw)?.action;return a&&typeof a.type==="string"?{action:a as ChatControlAction}:{action:null};}
- catch(e){console.warn("[AI_CHAT_CONTROL] planner unavailable",e instanceof Error?e.message:e);return {action:null};}
+ catch(e){console.warn("[AI_CHAT_CONTROL] planner unavailable",e instanceof Error?e.message:e);return {action:null,plannerError:true};}
 }
 
 export async function executeChatControl(a:ChatControlAction):Promise<unknown>{

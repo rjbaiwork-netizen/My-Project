@@ -1,0 +1,49 @@
+name: Phase 02 Security Branch Validation
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase02-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-validate:
+    name: Build monorepo and validate Prisma schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build shared package
+        run: npm run build:shared
+
+      - name: Build frontend
+        run: npm run build:frontend
+
+      - name: Build backend (placeholder database URL only)
+        env:
+          DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
+        run: npm run build:backend
+
+      - name: Run backend admin-auth security tests
+        run: npm run test:security --workspace=backend
+
+      - name: Validate Prisma schema (no database connection)
+        env:
+          DATABASE_URL: postgresql://build:build@127.0.0.1:5432/build
+        run: npm run db:validate
