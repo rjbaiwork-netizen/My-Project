@@ -100,6 +100,16 @@
   ],
   "updates": [
     {
+      "id": "2d51941306c4b83cfcfb1dbd61d78456ce2f23ef",
+      "commit": "2d51941306c4b83cfcfb1dbd61d78456ce2f23ef",
+      "title": "fix(frontend): correct provider integration auth import",
+      "date": "2026-10-11T02:10:32+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/2d51941306c4b83cfcfb1dbd61d78456ce2f23ef",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "36f97841939940dfec1e68132208cc1c41268d19",
       "commit": "36f97841939940dfec1e68132208cc1c41268d19",
       "title": "fix(security): protect AI provider integrations proxy",
