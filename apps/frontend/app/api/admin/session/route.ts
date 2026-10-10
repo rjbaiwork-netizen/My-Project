@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminSession } from "../../../lib/adminSession";
+import { verifyAdminSession } from "../../../../lib/adminSession";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
