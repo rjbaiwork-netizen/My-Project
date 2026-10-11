@@ -233,6 +233,8 @@ export async function startTelegramPollingOnStartup() {
       console.error("TOTPS Telegram bot identity does not match BOT_TELEGRAM_USER_ID / BOT_TELEGRAM_USERNAME; polling was not started.");
       return;
     }
+    // A bot cannot use getUpdates while a webhook is configured.
+    await telegram("deleteWebhook", { drop_pending_updates: false });
   } catch {
     console.error("TOTPS Telegram bot identity check failed; polling was not started.");
     return;
