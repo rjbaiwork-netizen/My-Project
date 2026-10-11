@@ -29,9 +29,9 @@ async function telegram(method: string, body: Record<string, unknown>) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(8000)
+    signal: AbortSignal.timeout(method === "getUpdates" ? 25000 : 8000)
   });
-  const result = await response.json().catch(() => null) as { ok?: boolean; description?: string; result?: { id?: number; username?: string } } | null;
+  const result = await response.json().catch(() => null) as { ok?: boolean; description?: string; result?: unknown } | null;
   if (!response.ok || !result?.ok) throw new Error("Telegram API request failed.");
   return result;
 }
@@ -159,26 +159,25 @@ router.post("/session/revoke", async (req, res) => {
   res.json({ success: true });
 });
 
-router.post("/webhook", async (req, res) => {
-  const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (!secret || !equal(req.get("x-telegram-bot-api-secret-token") ?? "", secret)) {
-    return void res.status(403).json({ ok: false });
-  }
-  const update = req.body as {
-    callback_query?: { id: string; from: { id: number }; data?: string; message?: { chat: { id: number }; message_id: number } };
-    message?: { from?: { id: number }; chat: { id: number }; text?: string };
-  };
+
+type TelegramUpdate = {
+  update_id: number;
+  callback_query?: { id: string; from: { id: number }; data?: string; message?: { chat: { id: number }; message_id: number } };
+  message?: { from?: { id: number; username?: string }; chat: { id: number }; text?: string };
+};
+
+async function handleTelegramUpdate(update: TelegramUpdate) {
   const ownerId = process.env.OWNER_TELEGRAM_USER_ID?.trim();
   const callback = update.callback_query;
   if (callback) {
     if (!ownerId || String(callback.from.id) !== ownerId) {
       await telegram("answerCallbackQuery", { callback_query_id: callback.id, text: "Not authorized.", show_alert: true }).catch(() => undefined);
-      return void res.json({ ok: true });
+      return;
     }
     const match = /^admin_login:(approve|deny):([a-zA-Z0-9_-]+)$/.exec(callback.data ?? "");
     if (!match) {
       await telegram("answerCallbackQuery", { callback_query_id: callback.id, text: "Unknown action." }).catch(() => undefined);
-      return void res.json({ ok: true });
+      return;
     }
     const [, action, requestId] = match;
     const now = new Date();
@@ -187,7 +186,10 @@ router.post("/webhook", async (req, res) => {
       where: { id: requestId, status: "PENDING", expiresAt: { gt: now } },
       data: { status, approvedAt: action === "approve" ? now : null }
     });
-    await telegram("answerCallbackQuery", { callback_query_id: callback.id, text: result.count === 1 ? (action === "approve" ? "Login approved." : "Login denied.") : "Request expired or already handled." }).catch(() => undefined);
+    await telegram("answerCallbackQuery", {
+      callback_query_id: callback.id,
+      text: result.count === 1 ? (action === "approve" ? "Login approved." : "Login denied.") : "Request expired or already handled."
+    }).catch(() => undefined);
     if (callback.message) {
       await telegram("editMessageText", {
         chat_id: callback.message.chat.id,
@@ -198,52 +200,68 @@ router.post("/webhook", async (req, res) => {
       }).catch(() => undefined);
     }
     await event(result.count === 1 ? (action === "approve" ? "telegram_approval_granted" : "telegram_approval_denied") : "telegram_approval_rejected", { requestId });
-    return void res.json({ ok: true });
+    return;
   }
+
   const message = update.message;
   if (message?.text?.startsWith("/")) {
     const authorized = Boolean(ownerId && message.from && String(message.from.id) === ownerId);
-    const text = authorized
-      ? "My-Project Admin Security Bot\nLogin approvals are sent here automatically.\nCommands: /start, /help, /status"
+    const reply = authorized
+      ? "My-Project TOTPS Authentication Bot\\nLogin approvals are sent here automatically.\\nCommands: /start, /help, /status"
       : "This bot is restricted to the configured Owner account.";
-    await telegram("sendMessage", { chat_id: message.chat.id, text }).catch(() => undefined);
+    await telegram("sendMessage", { chat_id: message.chat.id, text: reply }).catch(() => undefined);
   }
-  res.json({ ok: true });
-});
+}
 
-export default router;
+let telegramPollingStarted = false;
 
-export async function registerTelegramWebhookOnStartup() {
-  const url = process.env.TELEGRAM_WEBHOOK_URL?.trim();
-  const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
+export async function startTelegramPollingOnStartup() {
+  if (telegramPollingStarted) return;
   const token = process.env.TELEGRAM_TOTPS_BOT_TOKEN?.trim();
   const expectedBotId = process.env.BOT_TELEGRAM_USER_ID?.trim();
   const expectedBotUsername = process.env.BOT_TELEGRAM_USERNAME?.trim().replace(/^@/, "").toLowerCase();
-  if (!url || !secret || !token || !expectedBotId || !expectedBotUsername) {
-    console.log("TOTPS Telegram webhook registration skipped: required bot identity/webhook variables are not fully configured.");
+  const ownerId = process.env.OWNER_TELEGRAM_USER_ID?.trim();
+  if (!token || !expectedBotId || !expectedBotUsername || !ownerId || !/^\\d+$/.test(expectedBotId) || !/^\\d+$/.test(ownerId)) {
+    console.log("TOTPS Telegram polling skipped: bot identity or Owner ID runtime variables are missing/invalid.");
     return;
   }
+
   try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "https:" || !parsed.pathname.endsWith("/api/telegram-auth/webhook")
-        || !/^[A-Za-z0-9_-]{1,256}$/.test(secret)) {
-      console.error("Telegram webhook configuration is invalid; webhook was not registered.");
-      return;
-    }
     const identity = await telegram("getMe", {});
-    if (String(identity.result?.id ?? "") !== expectedBotId
-        || String(identity.result?.username ?? "").toLowerCase() !== expectedBotUsername) {
-      console.error("TOTPS Telegram bot identity does not match BOT_TELEGRAM_USER_ID / BOT_TELEGRAM_USERNAME; webhook was not registered.");
+    const bot = identity.result as { id?: number; username?: string } | undefined;
+    if (String(bot?.id ?? "") !== expectedBotId || String(bot?.username ?? "").toLowerCase() !== expectedBotUsername) {
+      console.error("TOTPS Telegram bot identity does not match BOT_TELEGRAM_USER_ID / BOT_TELEGRAM_USERNAME; polling was not started.");
       return;
     }
-    await telegram("setWebhook", {
-      url,
-      secret_token: secret,
-      allowed_updates: ["message", "callback_query"],
-      drop_pending_updates: false
-    });
-    console.log("Telegram webhook registered successfully.");
   } catch {
-    console.error("Telegram webhook registration failed; backend startup will continue.");
+    console.error("TOTPS Telegram bot identity check failed; polling was not started.");
+    return;
+  }
+
+  telegramPollingStarted = true;
+  console.log("TOTPS Telegram bot identity verified; long polling started.");
+  let offset: number | undefined;
+  while (telegramPollingStarted) {
+    try {
+      const result = await telegram("getUpdates", {
+        ...(offset === undefined ? {} : { offset }),
+        timeout: 20,
+        allowed_updates: ["message", "callback_query"]
+      });
+      const updates = result.result as TelegramUpdate[] | undefined;
+      if (!Array.isArray(updates)) continue;
+      for (const update of updates) {
+        offset = update.update_id + 1;
+        try {
+          await handleTelegramUpdate(update);
+        } catch {
+          await event("telegram_update_processing_failed", { updateId: update.update_id });
+        }
+      }
+    } catch {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
   }
 }
+
+export default router;
