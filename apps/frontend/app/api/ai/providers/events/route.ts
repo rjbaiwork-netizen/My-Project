@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
-  if (!verifyAdminSession(request)) {
+  if (!(await verifyAdminSession(request))) {
     return NextResponse.json(
       { success: false, error: { message: "Administrator login is required." } },
       { status: 401, headers: { "Cache-Control": "no-store" } }
