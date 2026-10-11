@@ -10,7 +10,7 @@ async function forward(request: NextRequest, context: RouteContext) {
   if (!sameOrigin(request) && request.method !== "GET") {
     return NextResponse.json({ success: false, error: { message: "Invalid request origin." } }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
-  if (!verifyAdminSession(request)) {
+  if (!(await verifyAdminSession(request))) {
     return NextResponse.json({ success: false, error: { message: "Administrator login is required." } }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
