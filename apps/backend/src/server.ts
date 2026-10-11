@@ -2,7 +2,7 @@ import "dotenv/config";
 import cors from "cors";
 import express,{type ErrorRequestHandler} from "express";
 import adminRoutes from "./routes/adminRoutes.js";
-import telegramAuthRoutes from "./routes/telegramAuthRoutes.js";
+import telegramAuthRoutes, { registerTelegramWebhookOnStartup } from "./routes/telegramAuthRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import providerIntegrationRoutes from "./routes/providerIntegrationRoutes.js";
 import { getAIWorkerStatus,startAIWorker } from "./workers/aiWorker.js";
@@ -68,6 +68,7 @@ app.use(errorHandler);
 app.listen(port,"0.0.0.0",()=>{
   console.log(`Backend API listening on 0.0.0.0:${port}`);
   startAIWorker();
+  void registerTelegramWebhookOnStartup();
 });
 export default app;
 
