@@ -36,4 +36,7 @@ Frontend runtime also needs `NEXT_PUBLIC_API_URL` pointing to the Railway backen
 ## Validation
 - CI must pass monorepo builds, Prisma schema validation, and admin-auth security tests.
 - Before production use, verify a fresh login request, Owner approval, denial, expiry, logout revocation, idle timeout, and behavior when Telegram is unavailable.
-- GitHub Repository Secrets are used by workflows only when explicitly mapped into a workflow; they do not automatically become Railway runtime Variables.
+- The workflow `.github/workflows/sync-telegram-secrets.yml` copies the dedicated Telegram secrets from GitHub Actions into the Railway backend and copies only `ADMIN_API_TOKEN` plus `NEXT_PUBLIC_API_URL` into Render. Bot credentials must never be sent to Render.
+- GitHub Secrets do not automatically trigger a workflow when their values change. After rotating a secret, manually run **Sync GitHub Secrets to My-Project runtimes** from GitHub Actions.
+- Add a dedicated high-entropy `ADMIN_API_TOKEN` GitHub Repository Secret. Do not reuse `ADMIN_LOGIN_PASSWORD`, `RAILWAY_TOKEN`, or a Telegram bot token as the service-to-service credential.
+- This sync workflow is in the feature branch until PR #43 is merged; it cannot sync production from the draft PR. Production Telegram login is not active until the PR is reviewed/merged, the workflow runs successfully, and the Owner starts the bot with `/start`.
