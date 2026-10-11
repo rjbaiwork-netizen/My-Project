@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { prisma } from "../lib/prisma.js";
+import { Prisma } from "../../generated/prisma/client.js";
 
 const router = Router();
 const MAX_SESSION_MS = 24 * 60 * 60 * 1000;
@@ -35,7 +36,7 @@ async function telegram(method: string, body: Record<string, unknown>) {
   return result;
 }
 async function event(eventType: string, detail: Record<string, unknown>, ipHash?: string | null) {
-  await prisma.adminSecurityEvent.create({ data: { eventType, detail, ipHash: ipHash ?? null } }).catch(() => undefined);
+  await prisma.adminSecurityEvent.create({ data: { eventType, detail: detail as Prisma.InputJsonValue, ipHash: ipHash ?? null } }).catch(() => undefined);
 }
 function getIpHash(req: Request) {
   const ip = req.ip || req.get("x-real-ip") || "";
