@@ -212,3 +212,30 @@ router.post("/webhook", async (req, res) => {
 });
 
 export default router;
+
+export async function registerTelegramWebhookOnStartup() {
+  const url = process.env.TELEGRAM_WEBHOOK_URL?.trim();
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
+  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  if (!url || !secret || !token) {
+    console.log("Telegram webhook auto-registration skipped: runtime variables are not fully configured.");
+    return;
+  }
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" || !parsed.pathname.endsWith("/api/telegram-auth/webhook")
+        || !/^[A-Za-z0-9_-]{1,256}$/.test(secret)) {
+      console.error("Telegram webhook configuration is invalid; webhook was not registered.");
+      return;
+    }
+    await telegram("setWebhook", {
+      url,
+      secret_token: secret,
+      allowed_updates: ["message", "callback_query"],
+      drop_pending_updates: false
+    });
+    console.log("Telegram webhook registered successfully.");
+  } catch {
+    console.error("Telegram webhook registration failed; backend startup will continue.");
+  }
+}
