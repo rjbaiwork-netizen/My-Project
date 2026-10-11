@@ -20,12 +20,13 @@
 Frontend runtime also needs `NEXT_PUBLIC_API_URL` pointing to the backend and the same `ADMIN_API_TOKEN`.
 
 ## Setup and activation
-1. Add the variables to the **backend runtime service** and frontend runtime service; never place the bot token in a `NEXT_PUBLIC_*` variable or GitHub source.
-2. Apply the new Prisma migration with the existing deployment migration command. Do not run this against an unintended database.
-3. After the backend is deployed and reachable, register the webhook from a trusted environment:
+1. In Telegram, open the bot and send `/start` from the Owner account first, so the bot can send approval requests to that chat.
+2. Add the variables to the **backend runtime service** and frontend runtime service; never place the bot token in a `NEXT_PUBLIC_*` variable or GitHub source.
+3. Apply the new Prisma migration with the existing deployment migration command. Do not run this against an unintended database.
+4. After the backend is deployed and reachable, register the webhook from a trusted environment:
    `TELEGRAM_BOT_TOKEN=... TELEGRAM_WEBHOOK_URL=https://YOUR-BACKEND/api/telegram-auth/webhook TELEGRAM_WEBHOOK_SECRET=... node scripts/register-telegram-webhook.mjs`
-4. Open `/admin-login`, request a login, and approve that specific request in the Owner's Telegram chat.
-5. Verify denied/expired requests, logout, idle expiry, absolute expiry, and backend unavailability before relying on it for production administration.
+5. Open `/admin-login`, request a login, and approve that specific request in the Owner's Telegram chat.
+6. Verify denied/expired requests, logout, idle expiry, absolute expiry, and backend unavailability before relying on it for production administration.
 
 ## Operational notes
 - The legacy `ADMIN_LOGIN_PASSWORD` variable is no longer used by the login route, but it should only be removed after confirming no other service depends on it.
