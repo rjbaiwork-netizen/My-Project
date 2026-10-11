@@ -102,24 +102,23 @@ router.post("/login-status", async (req, res) => {
     return void res.json({ success: true, status: "expired" });
   }
   if (login.status !== "APPROVED") return void res.json({ success: true, status: login.status.toLowerCase() });
-  if (login.consumedAt && !await prisma.adminSession.findUnique({ where: { loginRequestId: login.id } })) {
-    return void res.status(409).json({ success: false, error: { message: "Login approval is no longer available." } });
-  }
-  let session = await prisma.adminSession.findUnique({ where: { loginRequestId: login.id } });
-  if (!session) {
-    session = await prisma.adminSession.create({
-      data: {
-        tokenHash: login.sessionTokenHash,
-        loginRequestId: login.id,
-        expiresAt: new Date(now.getTime() + MAX_SESSION_MS),
-        lastActivityAt: now,
-        deviceLabel: login.deviceLabel,
-        ipHash: login.ipHash
-      }
-    });
-    await prisma.adminLoginRequest.update({ where: { id: login.id }, data: { consumedAt: now } });
-    await event("login_approved", { requestId: login.id, sessionId: session.id }, login.ipHash);
-  }
+  const session = await prisma.adminSession.upsert({
+    where: { loginRequestId: login.id },
+    create: {
+      tokenHash: login.sessionTokenHash,
+      loginRequestId: login.id,
+      expiresAt: new Date(now.getTime() + MAX_SESSION_MS),
+      lastActivityAt: now,
+      deviceLabel: login.deviceLabel,
+      ipHash: login.ipHash
+    },
+    update: {}
+  });
+  const consumed = await prisma.adminLoginRequest.updateMany({
+    where: { id: login.id, consumedAt: null },
+    data: { consumedAt: now }
+  });
+  if (consumed.count === 1) await event("login_approved", { requestId: login.id, sessionId: session.id }, login.ipHash);
   if (session.revokedAt || session.expiresAt <= now || session.lastActivityAt.getTime() < now.getTime() - IDLE_TIMEOUT_MS) {
     return void res.json({ success: true, status: "expired" });
   }
