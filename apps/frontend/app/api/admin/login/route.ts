@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { sameOrigin } from "../../../../lib/adminSession";
-import { loginRateLimit, recordLoginFailure, clearLoginFailures } from "../../../../lib/loginRateLimit";
+import { loginRateLimit, recordLoginFailure } from "../../../../lib/loginRateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
     { status: 503, headers: { "Cache-Control": "no-store" } }
   );
 
+  recordLoginFailure(limit.key);
   const pollToken = randomBytes(32).toString("hex");
   const sessionToken = randomBytes(32).toString("hex");
   const userAgent = request.headers.get("user-agent") ?? "Unknown browser";
@@ -35,10 +36,8 @@ export async function POST(request: NextRequest) {
     });
     const data = await upstream.json().catch(() => null) as { success?: boolean; requestId?: string; expiresInSeconds?: number; error?: { message?: string } } | null;
     if (!upstream.ok || !data?.success || !data.requestId) {
-      recordLoginFailure(limit.key);
       return NextResponse.json({ success: false, error: { message: data?.error?.message ?? "Unable to start Telegram approval." } }, { status: upstream.status || 502, headers: { "Cache-Control": "no-store" } });
     }
-    clearLoginFailures(limit.key);
     return NextResponse.json({
       success: true,
       requestId: data.requestId,
@@ -47,7 +46,6 @@ export async function POST(request: NextRequest) {
       expiresInSeconds: data.expiresInSeconds ?? 300
     }, { status: 202, headers: { "Cache-Control": "no-store" } });
   } catch {
-    recordLoginFailure(limit.key);
     return NextResponse.json({ success: false, error: { message: "Admin authentication service is unavailable." } }, { status: 502, headers: { "Cache-Control": "no-store" } });
   }
 }
