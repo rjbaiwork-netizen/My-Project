@@ -1,36 +1,39 @@
-# Telegram Passwordless Admin Authentication
+# Dedicated TOTPS Telegram Passwordless Admin Authentication
 
-## Security model
-- Every login request requires approval from the numeric Telegram Owner ID configured in `OWNER_TELEGRAM_USER_ID`. Sending `/start` to the bot does not enroll or authorize an account.
-- The TOTPS bot token, Owner ID, webhook secret, and backend service token belong only in the backend runtime environment. Never commit real values or paste them into chat.
-- This module is deliberately isolated to the dedicated `@TOTPS_Bot`; do not point it at `@ExpertBrainAIBot` or share that bot's token.
-- At startup, the backend checks Telegram `getMe` against `BOT_TELEGRAM_USER_ID` and `BOT_TELEGRAM_USERNAME` before registering the webhook. The numeric Owner ID remains the authorization source; Owner username is not trusted for authorization.
-- Login requests expire after five minutes and are bound to independent, high-entropy polling and session tokens. Only their SHA-256 hashes are persisted.
-- Sessions are stored in PostgreSQL. The HttpOnly, Secure, SameSite=Strict cookie contains a 256-bit opaque token; the backend stores only its hash.
-- Absolute session lifetime is 24 hours; inactivity timeout is two hours. Each protected frontend API request checks and refreshes the backend session activity timestamp.
-- Logout revokes the database session before clearing the cookie. Security events are recorded without storing secrets.
-- Login status and request APIs require the private frontend-to-backend `ADMIN_API_TOKEN`. The Telegram webhook additionally validates `X-Telegram-Bot-Api-Secret-Token`.
+## Separation
+- This module uses only the dedicated `@TOTPS_Bot` authentication bot. It must not share or reuse the token for `@ExpertBrainAIBot`, which belongs to the separate events/documents/notifications workflow.
+- Telegram updates are received using Bot API long polling (`getUpdates`); no webhook URL or webhook secret is required.
+- The backend verifies `TELEGRAM_TOTPS_BOT_TOKEN` using Telegram `getMe` and compares the returned numeric ID and username to `BOT_TELEGRAM_USER_ID` and `BOT_TELEGRAM_USERNAME` before polling.
+- Authorization depends on the configured numeric `OWNER_TELEGRAM_USER_ID`. The Owner username is informational only because usernames can change.
 
 ## Required backend runtime variables
 - `DATABASE_URL`
 - `ADMIN_API_TOKEN` (must match the frontend runtime value)
-- `TELEGRAM_TOTPS_BOT_TOKEN` (dedicated authentication/step-up bot token; do not reuse the Expert Brain bot token)
-- `BOT_TELEGRAM_USER_ID` and `BOT_TELEGRAM_USERNAME` (expected bot identity, checked against Telegram `getMe`)
-- `OWNER_TELEGRAM_USER_ID` (the Owner's numeric Telegram user ID; authoritative identity, not the username)
-- `OWNER_TELEGRAM_USERNAME` (informational only; usernames can change)
-- `TELEGRAM_WEBHOOK_SECRET` (1-256 characters from `A-Z a-z 0-9 _ -`)
-- `TELEGRAM_WEBHOOK_URL` (HTTPS URL ending in `/api/telegram-auth/webhook`)
+- `TELEGRAM_TOTPS_BOT_TOKEN`
+- `BOT_TELEGRAM_USER_ID`
+- `BOT_TELEGRAM_USERNAME` (for example, `@TOTPS_Bot`)
+- `OWNER_TELEGRAM_USER_ID` (numeric Telegram user ID)
+- `OWNER_TELEGRAM_USERNAME` (informational; never the sole authorization check)
 
-Frontend runtime also needs `NEXT_PUBLIC_API_URL` pointing to the backend and the same `ADMIN_API_TOKEN`.
+Frontend runtime also needs `NEXT_PUBLIC_API_URL` pointing to the Railway backend and the same `ADMIN_API_TOKEN`.
 
-## Setup and activation
-1. In Telegram, open the bot and send `/start` from the Owner account first, so the bot can send approval requests to that chat.
-2. Add the variables to the **backend runtime service** and frontend runtime service; never place the bot token in a `NEXT_PUBLIC_*` variable or GitHub source.
-3. Apply the new Prisma migration with the existing deployment migration command. Do not run this against an unintended database.
-4. After the backend is deployed and all three webhook variables are set, the backend automatically registers the webhook on startup. If needed, the same operation can be run manually from a trusted environment with `node scripts/register-telegram-webhook.mjs` and the three variables set.
-5. Open `/admin-login`, request a login, and approve that specific request in the Owner's Telegram chat.
-6. Verify denied/expired requests, logout, idle expiry, absolute expiry, and backend unavailability before relying on it for production administration.
+## Setup
+1. Put the bot token and identity values in Railway **backend service Variables**, not in source code or any `NEXT_PUBLIC_*` variable.
+2. Set the same `ADMIN_API_TOKEN` value in the Railway backend and Render frontend runtime.
+3. In Telegram, open the dedicated bot as the Owner and send `/start` at least once so the bot can send private login approval requests.
+4. Keep the backend at exactly one active replica while this process owns the bot's long-polling connection. Do not run a second poller for the same bot token.
+5. Apply the existing Prisma migration using the deployment migration command against the intended database only.
+6. Open `/admin-login`, request a login, then approve or deny that specific browser request in the Owner's Telegram chat.
 
-## Operational notes
-- The legacy `ADMIN_LOGIN_PASSWORD` variable is no longer used by the login route, but it should only be removed after confirming no other service depends on it.
-- Do not enable production traffic until CI/build, migration, Telegram webhook delivery, Owner ID, and session tests pass.
+## Security controls
+- Login requests expire after five minutes and are bound to independent, high-entropy polling and session tokens. Only SHA-256 hashes are persisted.
+- The callback handler accepts approval/denial only when the callback sender's numeric Telegram ID matches `OWNER_TELEGRAM_USER_ID`.
+- Sessions are stored in PostgreSQL. The HttpOnly, Secure, SameSite=Strict cookie contains a 256-bit opaque token; the backend stores only its hash.
+- Absolute session lifetime is 24 hours; inactivity timeout is two hours. Logout revokes the database session before clearing the cookie.
+- Private login APIs require the frontend-to-backend `ADMIN_API_TOKEN`. Security events are recorded without storing tokens or passwords.
+- `ADMIN_LOGIN_PASSWORD` is not used by this Telegram login route; remove it from other runtime/CI configurations only after confirming no other workflow depends on it.
+
+## Validation
+- CI must pass monorepo builds, Prisma schema validation, and admin-auth security tests.
+- Before production use, verify a fresh login request, Owner approval, denial, expiry, logout revocation, idle timeout, and behavior when Telegram is unavailable.
+- GitHub Repository Secrets are used by workflows only when explicitly mapped into a workflow; they do not automatically become Railway runtime Variables.
