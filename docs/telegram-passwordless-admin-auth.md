@@ -2,7 +2,9 @@
 
 ## Security model
 - Every login request requires approval from the numeric Telegram Owner ID configured in `OWNER_TELEGRAM_USER_ID`. Sending `/start` to the bot does not enroll or authorize an account.
-- The bot token, Owner ID, webhook secret, and backend service token belong only in the backend runtime environment. Never commit real values or paste them into chat.
+- The TOTPS bot token, Owner ID, webhook secret, and backend service token belong only in the backend runtime environment. Never commit real values or paste them into chat.
+- This module is deliberately isolated to the dedicated `@TOTPS_Bot`; do not point it at `@ExpertBrainAIBot` or share that bot's token.
+- At startup, the backend checks Telegram `getMe` against `BOT_TELEGRAM_USER_ID` and `BOT_TELEGRAM_USERNAME` before registering the webhook. The numeric Owner ID remains the authorization source; Owner username is not trusted for authorization.
 - Login requests expire after five minutes and are bound to independent, high-entropy polling and session tokens. Only their SHA-256 hashes are persisted.
 - Sessions are stored in PostgreSQL. The HttpOnly, Secure, SameSite=Strict cookie contains a 256-bit opaque token; the backend stores only its hash.
 - Absolute session lifetime is 24 hours; inactivity timeout is two hours. Each protected frontend API request checks and refreshes the backend session activity timestamp.
@@ -12,8 +14,10 @@
 ## Required backend runtime variables
 - `DATABASE_URL`
 - `ADMIN_API_TOKEN` (must match the frontend runtime value)
-- `TELEGRAM_BOT_TOKEN`
-- `OWNER_TELEGRAM_USER_ID` (the Owner's numeric Telegram user ID, not a chat title or username)
+- `TELEGRAM_TOTPS_BOT_TOKEN` (dedicated authentication/step-up bot token; do not reuse the Expert Brain bot token)
+- `BOT_TELEGRAM_USER_ID` and `BOT_TELEGRAM_USERNAME` (expected bot identity, checked against Telegram `getMe`)
+- `OWNER_TELEGRAM_USER_ID` (the Owner's numeric Telegram user ID; authoritative identity, not the username)
+- `OWNER_TELEGRAM_USERNAME` (informational only; usernames can change)
 - `TELEGRAM_WEBHOOK_SECRET` (1-256 characters from `A-Z a-z 0-9 _ -`)
 - `TELEGRAM_WEBHOOK_URL` (HTTPS URL ending in `/api/telegram-auth/webhook`)
 
