@@ -10,7 +10,7 @@ async function forward(request: NextRequest, { params }: { params: Promise<{ pat
   if (request.method !== "GET" && request.method !== "HEAD" && !sameOrigin(request)) {
     return NextResponse.json({ success: false, error: { message: "Invalid request origin." } }, { status: 403, headers: { "Cache-Control": "no-store" } });
   }
-  if (!verifyAdminSession(request)) {
+  if (!(await verifyAdminSession(request))) {
     return NextResponse.json({ success: false, error: { message: "Administrator login is required." } }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
 

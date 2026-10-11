@@ -14,7 +14,7 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
 
 async function proxy(request: NextRequest, path: string) {
   if (!sameOrigin(request)) return NextResponse.json({ success: false, error: { message: "Invalid request origin." } }, { status: 403, headers: { "Cache-Control": "no-store" } });
-  if (!verifyAdminSession(request)) return NextResponse.json({ success: false, error: { message: "Administrator login is required." } }, { status: 401, headers: { "Cache-Control": "no-store" } });
+  if (!(await verifyAdminSession(request))) return NextResponse.json({ success: false, error: { message: "Administrator login is required." } }, { status: 401, headers: { "Cache-Control": "no-store" } });
 
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
   const token = process.env.ADMIN_API_TOKEN;

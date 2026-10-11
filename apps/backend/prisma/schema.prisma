@@ -319,3 +319,54 @@ model AIControlConfirmation {
 
   @@index([expiresAt, consumedAt])
 }
+
+
+enum AdminLoginRequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+  EXPIRED
+}
+
+model AdminLoginRequest {
+  id               String                  @id @default(cuid())
+  pollTokenHash    String
+  sessionTokenHash String
+  deviceLabel      String
+  ipHash           String?
+  status           AdminLoginRequestStatus @default(PENDING)
+  expiresAt        DateTime
+  approvedAt       DateTime?
+  consumedAt       DateTime?
+  createdAt        DateTime                @default(now())
+  session          AdminSession?
+
+  @@index([status, expiresAt])
+  @@index([createdAt])
+}
+
+model AdminSession {
+  id             String           @id @default(cuid())
+  tokenHash      String           @unique
+  loginRequestId String           @unique
+  createdAt      DateTime         @default(now())
+  lastActivityAt DateTime         @default(now())
+  expiresAt      DateTime
+  revokedAt      DateTime?
+  deviceLabel    String
+  ipHash         String?
+  loginRequest   AdminLoginRequest @relation(fields: [loginRequestId], references: [id], onDelete: Cascade)
+
+  @@index([revokedAt, expiresAt])
+  @@index([lastActivityAt])
+}
+
+model AdminSecurityEvent {
+  id        String   @id @default(cuid())
+  eventType String
+  detail    Json?
+  ipHash    String?
+  createdAt DateTime @default(now())
+
+  @@index([eventType, createdAt])
+}

@@ -157,7 +157,7 @@ export async function GET(
       filename = baseName + ".pdf";
     }
 
-    return new Response(body, {
+    return new Response(typeof body === "string" ? body : new Uint8Array(body), {
       status: 200,
       headers: {
         "Content-Type": contentType,
