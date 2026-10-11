@@ -207,7 +207,7 @@ async function handleTelegramUpdate(update: TelegramUpdate) {
   if (message?.text?.startsWith("/")) {
     const authorized = Boolean(ownerId && message.from && String(message.from.id) === ownerId);
     const reply = authorized
-      ? "My-Project TOTPS Authentication Bot\\nLogin approvals are sent here automatically.\\nCommands: /start, /help, /status"
+      ? "My-Project TOTPS Authentication Bot\nLogin approvals are sent here automatically.\nCommands: /start, /help, /status"
       : "This bot is restricted to the configured Owner account.";
     await telegram("sendMessage", { chat_id: message.chat.id, text: reply }).catch(() => undefined);
   }
@@ -221,7 +221,7 @@ export async function startTelegramPollingOnStartup() {
   const expectedBotId = process.env.BOT_TELEGRAM_USER_ID?.trim();
   const expectedBotUsername = process.env.BOT_TELEGRAM_USERNAME?.trim().replace(/^@/, "").toLowerCase();
   const ownerId = process.env.OWNER_TELEGRAM_USER_ID?.trim();
-  if (!token || !expectedBotId || !expectedBotUsername || !ownerId || !/^\\d+$/.test(expectedBotId) || !/^\\d+$/.test(ownerId)) {
+  if (!token || !expectedBotId || !expectedBotUsername || !ownerId || !/^\d+$/.test(expectedBotId) || !/^\d+$/.test(ownerId)) {
     console.log("TOTPS Telegram polling skipped: bot identity or Owner ID runtime variables are missing/invalid.");
     return;
   }
