@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   if (!sameOrigin(request)) return NextResponse.json({ success: false, error: { message: "Invalid request origin." } }, { status: 403, headers: { "Cache-Control": "no-store" } });
-  if (!verifyAdminSession(request)) return NextResponse.json({ success: false, error: { message: "Admin login is required." } }, { status: 401, headers: { "Cache-Control": "no-store" } });
+  if (!(await verifyAdminSession(request))) return NextResponse.json({ success: false, error: { message: "Admin login is required." } }, { status: 401, headers: { "Cache-Control": "no-store" } });
   if (process.env.ADMIN_CONTROL_PROXY_ENABLED !== "true") return NextResponse.json({ success: false, error: { message: "AI Control proxy is disabled by configuration." } }, { status: 503, headers: { "Cache-Control": "no-store" } });
 
   const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
