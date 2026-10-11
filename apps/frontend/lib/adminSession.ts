@@ -1,42 +1,41 @@
 import "server-only";
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import type { NextRequest } from "next/server";
 
 const COOKIE_NAME = "my_project_admin_session";
-const SESSION_SECONDS = 8 * 60 * 60;
-
-function secret() {
-  const value = process.env.ADMIN_SESSION_SECRET;
-  if (!value || value.length < 32) throw new Error("ADMIN_SESSION_SECRET must contain at least 32 characters.");
-  return value;
-}
-
-function sign(payload: string) {
-  return createHmac("sha256", secret()).update(payload).digest("base64url");
-}
+const SESSION_SECONDS = 24 * 60 * 60;
 
 export function createAdminSession() {
-  const payload = Buffer.from(JSON.stringify({ role: "admin", exp: Math.floor(Date.now() / 1000) + SESSION_SECONDS })).toString("base64url");
-  return { value: payload + "." + sign(payload), maxAge: SESSION_SECONDS };
+  return { value: randomBytes(32).toString("hex"), maxAge: SESSION_SECONDS };
 }
 
-export function verifyAdminSession(request: NextRequest) {
+export function getAdminSessionToken(request: NextRequest) {
+  const token = request.cookies.get(COOKIE_NAME)?.value;
+  return token && /^[a-f0-9]{64}$/.test(token) ? token : null;
+}
+
+export async function verifyAdminSession(request: NextRequest): Promise<boolean> {
+  const token = getAdminSessionToken(request);
+  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  const serviceToken = process.env.ADMIN_API_TOKEN;
+  if (!token || !base || !serviceToken) return false;
   try {
-    const raw = request.cookies.get(COOKIE_NAME)?.value;
-    if (!raw) return false;
-    const [payload, signature, extra] = raw.split(".");
-    if (!payload || !signature || extra) return false;
-    const expected = Buffer.from(sign(payload));
-    const supplied = Buffer.from(signature);
-    if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied)) return false;
-    const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { role?: string; exp?: number };
-    return claims.role === "admin" && typeof claims.exp === "number" && claims.exp > Math.floor(Date.now() / 1000);
+    const response = await fetch(`${base}/api/telegram-auth/session/verify`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${serviceToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000)
+    });
+    if (!response.ok) return false;
+    const result = await response.json() as { authenticated?: boolean };
+    return result.authenticated === true;
   } catch {
     return false;
   }
 }
 
-export function adminCookie(value: string, maxAge: number) {
+export function adminCookie(value: string, maxAge = SESSION_SECONDS) {
   return { name: COOKIE_NAME, value, httpOnly: true, secure: true, sameSite: "strict" as const, path: "/", maxAge };
 }
 
@@ -47,31 +46,12 @@ export function clearAdminCookie() {
 export function sameOrigin(request: NextRequest) {
   const rawOrigin = request.headers.get("origin");
   if (!rawOrigin) return false;
-
   let origin: URL;
-  try {
-    origin = new URL(rawOrigin);
-  } catch {
-    return false;
-  }
-  // Reject Origin values containing a path, query, or fragment.
+  try { origin = new URL(rawOrigin); } catch { return false; }
   if (rawOrigin !== origin.origin) return false;
   if (origin.origin === request.nextUrl.origin) return true;
-
-  // Render and other trusted reverse proxies may terminate TLS before Next.js.
-  // Prefer the proxy's forwarded public origin when it is available.
   const firstHeader = (name: string) => request.headers.get(name)?.split(",")[0]?.trim();
   const host = firstHeader("x-forwarded-host") ?? firstHeader("host");
   const protocol = (firstHeader("x-forwarded-proto") ?? request.nextUrl.protocol.replace(/:$/, "")).toLowerCase();
-  if (!host || !protocol) return false;
-
-  return origin.host.toLowerCase() === host.toLowerCase() && origin.protocol === `${protocol}:`;
-}
-
-export function verifyAdminPassword(input: unknown) {
-  const configured = process.env.ADMIN_LOGIN_PASSWORD;
-  if (!configured || typeof input !== "string") return false;
-  const a = createHmac("sha256", secret()).update(input).digest();
-  const b = createHmac("sha256", secret()).update(configured).digest();
-  return timingSafeEqual(a, b);
+  return Boolean(host && protocol && origin.host.toLowerCase() === host.toLowerCase() && origin.protocol === `${protocol}:`);
 }
