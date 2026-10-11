@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { sameOrigin } from "../../../../lib/adminSession";
-import { clearLoginFailures, loginRateLimit, recordLoginFailure, clearLoginFailures as clearFailures } from "../../../../lib/loginRateLimit";
+import { loginRateLimit, recordLoginFailure, clearLoginFailures } from "../../../../lib/loginRateLimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       recordLoginFailure(limit.key);
       return NextResponse.json({ success: false, error: { message: data?.error?.message ?? "Unable to start Telegram approval." } }, { status: upstream.status || 502, headers: { "Cache-Control": "no-store" } });
     }
-    clearFailures(limit.key);
+    clearLoginFailures(limit.key);
     return NextResponse.json({
       success: true,
       requestId: data.requestId,
