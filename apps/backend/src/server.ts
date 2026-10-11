@@ -2,6 +2,7 @@ import "dotenv/config";
 import cors from "cors";
 import express,{type ErrorRequestHandler} from "express";
 import adminRoutes from "./routes/adminRoutes.js";
+import telegramAuthRoutes from "./routes/telegramAuthRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import providerIntegrationRoutes from "./routes/providerIntegrationRoutes.js";
 import { getAIWorkerStatus,startAIWorker } from "./workers/aiWorker.js";
@@ -51,6 +52,7 @@ app.get("/ready",async(_req,res)=>{
   });
 });
 
+app.use("/api/telegram-auth",telegramAuthRoutes);
 app.use("/api",adminRoutes);
 app.use("/api/ai",aiRoutes);
 app.use("/api/ai/provider-integrations",providerIntegrationRoutes);
