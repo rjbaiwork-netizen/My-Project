@@ -157,7 +157,12 @@ export async function GET(
       filename = baseName + ".pdf";
     }
 
-    return new Response(body, {
+    // The DOM Response type expects a Web BodyInit. Node's Buffer can be typed
+    // as Uint8Array<ArrayBufferLike>, which is broader than BodyInit in current
+    // TypeScript/Node typings. Copy binary output into a plain Uint8Array backed
+    // by a fresh ArrayBuffer while leaving text responses unchanged.
+    const responseBody: BodyInit = typeof body === "string" ? body : new Uint8Array(body);
+    return new Response(responseBody, {
       status: 200,
       headers: {
         "Content-Type": contentType,

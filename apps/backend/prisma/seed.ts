@@ -17,111 +17,16 @@ const sections: Array<{
   order: number;
   content: Prisma.InputJsonObject;
 }> = [
-  {
-    key: SectionKey.HEADER,
-    title: "Header",
-    order: 1,
-    content: {
-      logo: { text: "My Project", imageUrl: null },
-      navigation: [],
-      cta: { label: "Contact Us", href: "/contact" }
-    }
-  },
-  {
-    key: SectionKey.HERO,
-    title: "Hero",
-    order: 2,
-    content: {
-      eyebrow: "Welcome",
-      heading: "Build something remarkable.",
-      description: "A dynamic CMS-powered website ready for your content.",
-      primaryAction: { label: "Get Started", href: "/contact" },
-      secondaryAction: { label: "View Services", href: "/services" },
-      imageUrl: null
-    }
-  },
-  {
-    key: SectionKey.ABOUT,
-    title: "About",
-    order: 3,
-    content: {
-      heading: "About My Project",
-      description: "Tell your visitors who you are, what you do, and why they should work with you.",
-      imageUrl: null
-    }
-  },
-  {
-    key: SectionKey.SERVICES,
-    title: "Services",
-    order: 4,
-    content: {
-      heading: "Our Services",
-      description: "Present your core services and capabilities.",
-      items: []
-    }
-  },
-  {
-    key: SectionKey.PORTFOLIO,
-    title: "Portfolio",
-    order: 5,
-    content: {
-      heading: "Our Work",
-      description: "Showcase selected projects and case studies.",
-      items: []
-    }
-  },
-  {
-    key: SectionKey.PRICING,
-    title: "Pricing",
-    order: 6,
-    content: {
-      heading: "Pricing Plans",
-      description: "Present transparent packages and pricing options.",
-      plans: []
-    }
-  },
-  {
-    key: SectionKey.TESTIMONIALS,
-    title: "Testimonials",
-    order: 7,
-    content: {
-      heading: "What Our Clients Say",
-      items: []
-    }
-  },
-  {
-    key: SectionKey.BLOG,
-    title: "Blog",
-    order: 8,
-    content: {
-      heading: "Latest Articles",
-      description: "Publish news, insights, and useful resources.",
-      posts: []
-    }
-  },
-  {
-    key: SectionKey.CONTACT,
-    title: "Contact",
-    order: 9,
-    content: {
-      heading: "Get In Touch",
-      description: "Provide your visitors with a clear way to contact you.",
-      email: "",
-      phone: "",
-      address: "",
-      formEnabled: true
-    }
-  },
-  {
-    key: SectionKey.FOOTER,
-    title: "Footer",
-    order: 10,
-    content: {
-      copyright: "© My Project. All rights reserved.",
-      links: [],
-      socialLinks: []
-    }
-  }
+  { key: SectionKey.HEADER, title: "Header", order: 1, content: { logo: { text: "My Project", imageUrl: null }, navigation: [], cta: { label: "Contact Us", href: "/contact" } } },
+  { key: SectionKey.HERO, title: "Hero", order: 2, content: { eyebrow: "Welcome", heading: "Build something remarkable.", description: "A dynamic CMS-powered website ready for your content.", primaryAction: { label: "Get Started", href: "/contact" }, secondaryAction: { label: "View Services", href: "/services" }, imageUrl: null } },
+  { key: SectionKey.ABOUT, title: "About", order: 3, content: { heading: "About My Project", description: "Tell your visitors who you are, what you do, and why they should work with you.", imageUrl: null } },
+  { key: SectionKey.SERVICES, title: "Services", order: 4, content: { heading: "Our Services", description: "Present your core services and capabilities.", items: [] } },
+  { key: SectionKey.PORTFOLIO, title: "Portfolio", order: 5, content: { heading: "Our Work", description: "Showcase selected projects and case studies.", items: [] } },
+  { key: SectionKey.PRICING, title: "Pricing", order: 6, content: { heading: "Pricing Plans", description: "Present transparent packages and pricing options.", plans: [] } },
+  { key: SectionKey.TESTIMONIALS, title: "Testimonials", order: 7, content: { heading: "What Our Clients Say", items: [] } },
+  { key: SectionKey.BLOG, title: "Blog", order: 8, content: { heading: "Latest Articles", description: "Publish news, insights, and useful resources.", posts: [] } },
+  { key: SectionKey.CONTACT, title: "Contact", order: 9, content: { heading: "Get In Touch", description: "Provide your visitors with a clear way to contact you.", email: "", phone: "", address: "", formEnabled: true } },
+  { key: SectionKey.FOOTER, title: "Footer", order: 10, content: { copyright: "© My Project. All rights reserved.", links: [], socialLinks: [] } }
 ];
 
 const agents = [
@@ -135,12 +40,9 @@ async function main() {
   for (const section of sections) {
     await prisma.cMSSection.upsert({
       where: { key: section.key },
-      // Seed must be idempotent without overwriting administrator changes.
-      // In particular, preserve isVisible and content for existing CMS sections.
-      update: {
-        title: section.title,
-        order: section.order
-      },
+      // Preserve administrator content and visibility unless the entire public
+      // site has become invisible; that recovery is handled below.
+      update: { title: section.title, order: section.order },
       create: {
         key: section.key,
         title: section.title,
@@ -151,22 +53,34 @@ async function main() {
     });
   }
 
-  for(const agent of agents)await prisma.aIAgent.upsert({where:{key:agent.key},update:{name:agent.name,description:agent.description,systemPrompt:agent.systemPrompt},create:agent});
+  // Recovery guard: if every CMS section is hidden, the public site renders
+  // an empty page. Restore visibility only in that all-hidden failure state.
+  // Normal per-section Show/Hide choices are preserved while any section is
+  // visible; this is intentionally not a routine visibility reset.
+  const visibleSectionCount = await prisma.cMSSection.count({ where: { isVisible: true } });
+  if (visibleSectionCount === 0) {
+    const recovery = await prisma.cMSSection.updateMany({ data: { isVisible: true } });
+    console.warn(`CMS visibility recovery enabled ${recovery.count} sections because none were visible.`);
+  }
+
+  for (const agent of agents) {
+    await prisma.aIAgent.upsert({ where: { key: agent.key }, update: { name: agent.name, description: agent.description, systemPrompt: agent.systemPrompt }, create: agent });
+  }
   const categories = [
-    ["knowledge","Knowledge","Verified information available to the agent."],
-    ["memory","Memory","Persistent useful context learned from interactions."],
-    ["website","Website","Website structure, content and operational knowledge."],
-    ["content","Content","Content patterns, drafts, preferences and history."],
-    ["automation","Automation","Automation rules, workflows and execution patterns."],
-    ["tasks","Tasks","Task history, outcomes and reusable task context."]
+    ["knowledge", "Knowledge", "Verified information available to the agent."],
+    ["memory", "Memory", "Persistent useful context learned from interactions."],
+    ["website", "Website", "Website structure, content and operational knowledge."],
+    ["content", "Content", "Content patterns, drafts, preferences and history."],
+    ["automation", "Automation", "Automation rules, workflows and execution patterns."],
+    ["tasks", "Tasks", "Task history, outcomes and reusable task context."]
   ];
   const seededAgents = await prisma.aIAgent.findMany();
   for (const agent of seededAgents) {
-    for (const [key,name,description] of categories) {
+    for (const [key, name, description] of categories) {
       await prisma.aIAgentBrainCategory.upsert({
-        where:{agentId_key:{agentId:agent.id,key}},
-        update:{name,description},
-        create:{agentId:agent.id,key,name,description,progress:0}
+        where: { agentId_key: { agentId: agent.id, key } },
+        update: { name, description },
+        create: { agentId: agent.id, key, name, description, progress: 0 }
       });
     }
   }
