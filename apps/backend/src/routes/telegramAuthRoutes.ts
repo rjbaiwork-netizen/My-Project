@@ -24,14 +24,14 @@ function requiredEnv(name: string) {
   return value;
 }
 async function telegram(method: string, body: Record<string, unknown>) {
-  const token = requiredEnv("TELEGRAM_BOT_TOKEN");
+  const token = requiredEnv("TELEGRAM_TOTPS_BOT_TOKEN");
   const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(8000)
   });
-  const result = await response.json().catch(() => null) as { ok?: boolean; description?: string } | null;
+  const result = await response.json().catch(() => null) as { ok?: boolean; description?: string; result?: { id?: number; username?: string } } | null;
   if (!response.ok || !result?.ok) throw new Error("Telegram API request failed.");
   return result;
 }
@@ -51,7 +51,7 @@ router.post("/login-request", async (req, res) => {
     return void res.status(400).json({ success: false, error: { message: "Invalid login request." } });
   }
   const ownerId = process.env.OWNER_TELEGRAM_USER_ID?.trim();
-  const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const botToken = process.env.TELEGRAM_TOTPS_BOT_TOKEN?.trim();
   if (!ownerId || !/^\d+$/.test(ownerId) || !botToken) {
     return void res.status(503).json({ success: false, error: { message: "Telegram Owner authentication is not configured." } });
   }
@@ -216,9 +216,11 @@ export default router;
 export async function registerTelegramWebhookOnStartup() {
   const url = process.env.TELEGRAM_WEBHOOK_URL?.trim();
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
-  const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
-  if (!url || !secret || !token) {
-    console.log("Telegram webhook auto-registration skipped: runtime variables are not fully configured.");
+  const token = process.env.TELEGRAM_TOTPS_BOT_TOKEN?.trim();
+  const expectedBotId = process.env.BOT_TELEGRAM_USER_ID?.trim();
+  const expectedBotUsername = process.env.BOT_TELEGRAM_USERNAME?.trim().replace(/^@/, "").toLowerCase();
+  if (!url || !secret || !token || !expectedBotId || !expectedBotUsername) {
+    console.log("TOTPS Telegram webhook registration skipped: required bot identity/webhook variables are not fully configured.");
     return;
   }
   try {
@@ -226,6 +228,12 @@ export async function registerTelegramWebhookOnStartup() {
     if (parsed.protocol !== "https:" || !parsed.pathname.endsWith("/api/telegram-auth/webhook")
         || !/^[A-Za-z0-9_-]{1,256}$/.test(secret)) {
       console.error("Telegram webhook configuration is invalid; webhook was not registered.");
+      return;
+    }
+    const identity = await telegram("getMe", {});
+    if (String(identity.result?.id ?? "") !== expectedBotId
+        || String(identity.result?.username ?? "").toLowerCase() !== expectedBotUsername) {
+      console.error("TOTPS Telegram bot identity does not match BOT_TELEGRAM_USER_ID / BOT_TELEGRAM_USERNAME; webhook was not registered.");
       return;
     }
     await telegram("setWebhook", {
