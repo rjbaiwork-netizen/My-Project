@@ -8,18 +8,18 @@
 
 ## Required backend runtime variables
 - `DATABASE_URL`
-- `ADMIN_API_TOKEN` (must match the frontend runtime value)
+- `ADMIN_API_TOKEN` (derived from the existing `ADMIN_LOGIN_PASSWORD` secret by the GitHub Actions sync workflow; no separate GitHub Secret is needed)
 - `TELEGRAM_TOTPS_BOT_TOKEN`
 - `BOT_TELEGRAM_USER_ID`
 - `BOT_TELEGRAM_USERNAME` (for example, `@TOTPS_Bot`)
 - `OWNER_TELEGRAM_USER_ID` (numeric Telegram user ID)
 - `OWNER_TELEGRAM_USERNAME` (informational; never the sole authorization check)
 
-Frontend runtime also needs `NEXT_PUBLIC_API_URL` pointing to the Railway backend and the same `ADMIN_API_TOKEN`.
+Frontend runtime also needs `NEXT_PUBLIC_API_URL` pointing to the Railway backend and the same derived `ADMIN_API_TOKEN`.
 
 ## Setup
 1. Put the bot token and identity values in Railway **backend service Variables**, not in source code or any `NEXT_PUBLIC_*` variable.
-2. Set the same `ADMIN_API_TOKEN` value in the Railway backend and Render frontend runtime.
+2. The sync workflow derives `ADMIN_API_TOKEN` from the existing `ADMIN_LOGIN_PASSWORD` using SHA-256 with a fixed context string, then sets the same value in Railway and Render. Use a strong password and rerun the workflow after rotating it.
 3. In Telegram, open the dedicated bot as the Owner and send `/start` at least once so the bot can send private login approval requests.
 4. Keep the backend at exactly one active replica while this process owns the bot's long-polling connection. Do not run a second poller for the same bot token.
 5. Apply the existing Prisma migration using the deployment migration command against the intended database only.
@@ -38,5 +38,6 @@ Frontend runtime also needs `NEXT_PUBLIC_API_URL` pointing to the Railway backen
 - Before production use, verify a fresh login request, Owner approval, denial, expiry, logout revocation, idle timeout, and behavior when Telegram is unavailable.
 - The workflow `.github/workflows/sync-telegram-secrets.yml` copies the dedicated Telegram secrets from GitHub Actions into the Railway backend and copies only `ADMIN_API_TOKEN` plus `NEXT_PUBLIC_API_URL` into Render. Bot credentials must never be sent to Render.
 - GitHub Secrets do not automatically trigger a workflow when their values change. After rotating a secret, manually run **Sync GitHub Secrets to My-Project runtimes** from GitHub Actions.
-- Add a dedicated high-entropy `ADMIN_API_TOKEN` GitHub Repository Secret. Do not reuse `ADMIN_LOGIN_PASSWORD`, `RAILWAY_TOKEN`, or a Telegram bot token as the service-to-service credential.
+- The current reported repository-secret list does not include `TELEGRAM_TOTPS_BOT_TOKEN`. If it is not already stored under that exact name, the workflow cannot sync the real bot credential from GitHub; do not substitute `ADMIN_LOGIN_PASSWORD`, Railway credentials, or a username.
+- No separate `ADMIN_API_TOKEN` GitHub Secret is required; the workflow derives a service credential from `ADMIN_LOGIN_PASSWORD`. Do not use a Telegram bot token as the service-to-service credential.
 - This sync workflow is in the feature branch until PR #43 is merged; it cannot sync production from the draft PR. Production Telegram login is not active until the PR is reviewed/merged, the workflow runs successfully, and the Owner starts the bot with `/start`.
