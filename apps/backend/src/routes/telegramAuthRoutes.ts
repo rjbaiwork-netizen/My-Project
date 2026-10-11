@@ -43,6 +43,7 @@ function getIpHash(req: Request) {
 }
 
 router.post("/login-request", async (req, res) => {
+  if (!serviceAuthorized(req)) return void res.status(401).json({ success: false, error: { message: "Unauthorized." } });
   const body = req.body as { pollToken?: unknown; sessionToken?: unknown; deviceLabel?: unknown };
   if (typeof body.pollToken !== "string" || !/^[a-f0-9]{64}$/.test(body.pollToken)
       || typeof body.sessionToken !== "string" || !/^[a-f0-9]{64}$/.test(body.sessionToken)) {
@@ -85,6 +86,7 @@ router.post("/login-request", async (req, res) => {
 });
 
 router.post("/login-status", async (req, res) => {
+  if (!serviceAuthorized(req)) return void res.status(401).json({ success: false, error: { message: "Unauthorized." } });
   const body = req.body as { requestId?: unknown; pollToken?: unknown; sessionToken?: unknown };
   if (typeof body.requestId !== "string" || typeof body.pollToken !== "string" || typeof body.sessionToken !== "string"
       || !/^[a-f0-9]{64}$/.test(body.pollToken) || !/^[a-f0-9]{64}$/.test(body.sessionToken)) {
