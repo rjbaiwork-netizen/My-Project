@@ -111,7 +111,7 @@ router.post("/login-status", async (req, res) => {
       data: {
         tokenHash: login.sessionTokenHash,
         loginRequestId: login.id,
-        expiresAt: new Date(login.createdAt.getTime() + MAX_SESSION_MS),
+        expiresAt: new Date(now.getTime() + MAX_SESSION_MS),
         lastActivityAt: now,
         deviceLabel: login.deviceLabel,
         ipHash: login.ipHash
