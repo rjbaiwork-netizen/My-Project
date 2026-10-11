@@ -18,7 +18,7 @@
 Frontend runtime also needs `NEXT_PUBLIC_API_URL` pointing to the Railway backend and the same derived `ADMIN_API_TOKEN`.
 
 ## Setup
-1. Put the bot token and identity values in Railway **backend service Variables**, not in source code or any `NEXT_PUBLIC_*` variable.
+1. Keep the real bot token and identity values in GitHub Repository Secrets only; the sync workflow sends the bot token to the Railway backend and never to Render or a `NEXT_PUBLIC_*` variable. The token must exist as `TELEGRAM_TOTPS_BOT_TOKEN` for this to work.
 2. The sync workflow derives `ADMIN_API_TOKEN` from the existing `ADMIN_LOGIN_PASSWORD` using SHA-256 with a fixed context string, then sets the same value in Railway and Render. Use a strong password and rerun the workflow after rotating it.
 3. In Telegram, open the dedicated bot as the Owner and send `/start` at least once so the bot can send private login approval requests.
 4. Keep the backend at exactly one active replica while this process owns the bot's long-polling connection. Do not run a second poller for the same bot token.
