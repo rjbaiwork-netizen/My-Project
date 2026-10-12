@@ -172,6 +172,16 @@
   ],
   "updates": [
     {
+      "id": "d39c1d669aa1424c3cfd923e24cc4126c8adae6a",
+      "commit": "d39c1d669aa1424c3cfd923e24cc4126c8adae6a",
+      "title": "fix: pass Railway API URL into Render frontend build",
+      "date": "2026-10-12T11:45:27+06:00",
+      "url": "https://github.com/rjbaiwork-netizen/My-Project/commit/d39c1d669aa1424c3cfd923e24cc4126c8adae6a",
+      "features": [],
+      "changedFiles": [],
+      "deploymentStatus": "GitHub commit recorded; deployment must be verified separately"
+    },
+    {
       "id": "ae26172bf80281faeb73bd01ad2cd3f3ad22cb94",
       "commit": "ae26172bf80281faeb73bd01ad2cd3f3ad22cb94",
       "title": "fix: resolve Render build and empty CMS visibility",
